@@ -7,6 +7,7 @@ import pygame as pg
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
 from board import Board
+from solver import AI
 from conf import *
 
 
@@ -33,7 +34,7 @@ class App:
         self.window = pg.display.set_mode(self.screen_size)
         pg.display.set_caption("Mine Sweeper")
 
-        self.board = Board(board_size, mines)
+        self.board = Board(board_size, mines, seed=SEED)
         self.flags_display = NumberDisplay(self.board.mines_remaining())
         self.clock_display = NumberDisplay(0)
 
@@ -249,6 +250,7 @@ class App:
 
             # Event for when the player clicked to digg a place
             if event.type == pg.MOUSEBUTTONUP:
+                    
                 # If the chord technique is not active, digg a single cell
                 if event.button == LEFT and not self.chord_mode:
                     # Digg the clicked place
@@ -269,6 +271,11 @@ class App:
                         continue
 
                     self.on_success_dig()
+                
+                
+                self.ai.update_map(self.board)
+                print(self.ai.p_map.T)
+                print(self.board.digg_map.T)
 
             if self.won:
                 # Places a flag in all unexplored cells
@@ -378,10 +385,15 @@ class App:
 
     def start(self):
         """ Starts the main loop of the game """
+        self.ai = AI(self.board, seed=SEED)        
+        print(self.ai.p_map)
         while True:
             self.check_events()
             self.render()
             self.clock.tick(GAME_FPS)
+            # pg.time.wait(1000)
+
+
 
 
 def main():
@@ -390,4 +402,5 @@ def main():
 
 
 if __name__ == '__main__':
+    SEED = 3
     main()

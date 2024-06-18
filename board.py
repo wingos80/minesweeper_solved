@@ -8,7 +8,8 @@ from conf import *
 class Board:
     """ The game base logic """
 
-    def __init__(self, size, mines):
+    def __init__(self, size, mines, seed=0):
+        random.seed(seed)
         self.size = size
 
         # The ammount of mines to put in the board
@@ -25,6 +26,7 @@ class Board:
         # 1 represents that there is a mine nearby
         # 2 represents that there are 2 mines nearby, and so on...
         self.digg_map = np.zeros(self.size, dtype='int')-1
+        
 
     def place_mines(self, initial_click_pos):
         """ Place mines being assure that the surrounding cells are safe """
