@@ -5,6 +5,7 @@ from board import Board
 
 class AI:
     def __init__(self, board, seed=0):
+        np.random.seed(seed)
         self.board          = board
         self.p_map          = np.ones(BOARD_SIZE)*MINES/(BOARD_SIZE[0]*BOARD_SIZE[1])
         self.revealed_cells = np.zeros(BOARD_SIZE, dtype='int')
@@ -115,22 +116,25 @@ class AI:
         self.p_map += self.delta_p_map
 
     def action4(self):
-        
-        
         self.p_map = np.clip(self.p_map, None, 1)
         self.p_map = np.clip(self.p_map, 0, None)
         
     
-    def iterate(self):
-        # correct for the under prediction of mines if it exists
-        self.action3()
-        print(self.p_map)
+    def iterate(self, p_map):
+        """
+        placeholder function for calling all the algorithm computations
+        TO BE FILLED
+        """
+        # # correct for the under prediction of mines if it exists
+        # self.action3()
+        # print(self.p_map.T)
         
-        # # correct for the over prediction of mines if it exists
-        # self.action2()
-        # print(self.p_map)
+        # # # correct for the over prediction of mines if it exists
+        # # self.action2()
+        # # print(self.p_map)
 
-        self.action4()
+        # self.action4()
+        return p_map
 
     def play_one_move(self):
         """
@@ -174,6 +178,30 @@ class AI:
 
         print('finished itearting probability map')
 
+    def compute_naive_map(self):
+        """
+        Computes a naive probability map,
+        by making the assumption that all empty
+        cells are equally likely to have a bomb.
+        """
+        p_map = np.ones(BOARD_SIZE)
+
+        empties = 0
+        for i in range(BOARD_SIZE[0]):
+            for j in range(BOARD_SIZE[1]):
+                if self.board.digg_map[i,j] == -1:
+                    empties += 1
+
+        increment = MINES/empties
+        
+        for i in range(BOARD_SIZE[0]):
+            for j in range(BOARD_SIZE[1]):
+                if self.board.digg_map[i,j] == -1:
+                    p_map[i,j] = increment
+                if self.board.digg_map[i,j] >= 0:
+                    p_map[i,j] = 0
+
+        return p_map
 
     def update_map(self, board):
         """
@@ -187,30 +215,19 @@ class AI:
             print("all bombs found!")
             return
         
-        empties = 0
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    empties += 1
-
-        increment = MINES/empties
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    self.p_map[i,j] = increment
-                if self.board.digg_map[i,j] >= 0:
-                    self.p_map[i,j] = 0
+        # # compute the naive probability map
+        # self.p_map = self.compute_naive_map()
         
-        prev_map = self.p_map.copy()
-        delta = 1
-        print(prev_map)
-        while delta > 0.001:
-            self.iterate()
-            delta = np.sum(np.abs(self.p_map - prev_map))
-            prev_map = self.p_map.copy()
-            # print(prev_map)
-            print(delta)
-            print('--------')
+        # prev_map = self.p_map.copy()
+        # delta = 1
+        # print(prev_map)
+        # while delta > 0.001:
+        #     self.p_map = self.iterate(self.p_map)
+        #     delta = np.sum(np.abs(self.p_map - prev_map))
+        #     prev_map = self.p_map.copy()
+        #     # print(prev_map)
+        #     print(delta)
+        #     print('--------')
 
         print('finished itearting probability map')
 

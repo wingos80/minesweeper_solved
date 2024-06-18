@@ -8,8 +8,11 @@ from conf import *
 class Board:
     """ The game base logic """
 
-    def __init__(self, size, mines, seed=0):
+    def __init__(self, size, mines, seed=0, random_place=True):
         random.seed(seed)
+
+        self.random_place = random_place
+        
         self.size = size
 
         # The ammount of mines to put in the board
@@ -39,17 +42,28 @@ class Board:
         excluded_pos = []
         x, y = initial_click_pos
 
-        for i in range(-1, 2):
-            for j in range(-1, 2):
+        for i in range(-1,2):
+            for j in range(-1,2):
                 excluded_pos.append((x+i, y+j))
 
-        while mines_placed < self.mines:
-            x = random.randint(0, width-1)
-            y = random.randint(0, height-1)
+        if self.random_place:
+            while mines_placed < self.mines:
+                x = random.randint(0, width-1)
+                y = random.randint(0, height-1)
 
-            if not self.mine_map[x, y] and not (x, y) in excluded_pos:
-                self.mine_map[x, y] = 1
-                mines_placed += 1
+                if not self.mine_map[x, y] and not (x, y) in excluded_pos:
+                    self.mine_map[x, y] = 1
+                    mines_placed += 1
+        else:             
+            # # case 1
+            # self.mines = 1
+            # self.mine_map[1, 1] = 1
+
+            # case 2
+            self.mines = 3
+            self.mine_map[0, 1] = 1
+            self.mine_map[1, 0] = 1
+            self.mine_map[2, 1] = 1
 
     def count_mines(self, pos):
         """ Returns the count of surrounding flags from a certain position """

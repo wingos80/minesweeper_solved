@@ -1,8 +1,8 @@
 # conf.py
 
 # Gameplay configuration
-BOARD_SIZE = (5, 6)
-MINES = 3
+BOARD_SIZE = (6, 6)
+MINES = 6
 
 # Mouse button constants
 LEFT, RIGHT = 1, 3

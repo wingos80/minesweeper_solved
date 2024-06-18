@@ -16,7 +16,7 @@ class App:
     interactions with the board, and methods to display the current state of
     the board """
 
-    def __init__(self, board_size, mines):
+    def __init__(self, board_size, mines, random_place=True):
         # Initialize pygame
         pg.init()
 
@@ -34,7 +34,7 @@ class App:
         self.window = pg.display.set_mode(self.screen_size)
         pg.display.set_caption("Mine Sweeper")
 
-        self.board = Board(board_size, mines, seed=SEED)
+        self.board = Board(board_size, mines, seed=SEED, random_place=random_place)
         self.flags_display = NumberDisplay(self.board.mines_remaining())
         self.clock_display = NumberDisplay(0)
 
@@ -273,8 +273,9 @@ class App:
                     self.on_success_dig()
                 
                 
-                self.ai.update_map(self.board)
-                print(self.ai.p_map.T)
+                # run the solver and stuff
+                self.solver.update_map(self.board)
+                print(self.solver.p_map.T)
                 print(self.board.digg_map.T)
 
             if self.won:
@@ -385,8 +386,9 @@ class App:
 
     def start(self):
         """ Starts the main loop of the game """
-        self.ai = AI(self.board, seed=SEED)        
-        print(self.ai.p_map)
+        self.solver = AI(self.board, seed=SEED)   
+        # cell, prob = self.ai.get_action(self.board)  
+        # self.board.digg(cell)
         while True:
             self.check_events()
             self.render()
@@ -394,13 +396,12 @@ class App:
             # pg.time.wait(1000)
 
 
-
-
 def main():
-    app = App(BOARD_SIZE, MINES)
+    app = App(BOARD_SIZE, MINES, random_place=True)
     app.start()
 
 
 if __name__ == '__main__':
-    SEED = 3
+    SEED = 4
     main()
+    

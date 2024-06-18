@@ -1,35 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # from utils.functions import *
+def make_matrix(rows, cols):
+    """
+    creates an adjacency matrix for a grid with rows x cols cells
+    """
+    n = rows*cols
+    M = np.zeros((n,n))
+    for i in range(rows):
+        for j in range(cols):
+            if i == 0 and j == 0:
+                neighbours = [(i)*cols + (j+1),
+                              (i+1)*cols + (j),
+                              (i+1)*cols + (j+1)]
+            else:
+                if i == 0 and j == cols-1:
+                    neighbours = [(i)*cols + (j-1),
+                                  (i+1)*cols + (j-1),
+                                  (i+1)*cols + (j)]
+                else:
+                    if i == rows-1 and j == 0:
+                        neighbours = [(i-1)*cols + (j),
+                                      (i-1)*cols + (j+1),
+                                      (i)*cols + (j+1)]
+                    else:
+                        if i == rows-1 and j == cols-1:
+                            neighbours = [(i-1)*cols + (j-1),
+                                          (i-1)*cols + (j),
+                                          (i)*cols + (j-1)]
+                        else:
+                            if i == 0:
+                                neighbours = [(i)*cols + (j-1),
+                                              (i)*cols + (j+1),
+                                              (i+1)*cols + (j-1),
+                                              (i+1)*cols + (j),
+                                              (i+1)*cols + (j+1)]
+                            else:
+                                if i == rows-1:
+                                    neighbours = [(i-1)*cols + (j-1),
+                                                  (i-1)*cols + (j),
+                                                  (i-1)*cols + (j+1),
+                                                  (i)*cols + (j-1),
+                                                  (i)*cols + (j+1)]
+                                else:
+                                    if j == 0:
+                                        neighbours = [(i-1)*cols + (j),
+                                                      (i-1)*cols + (j+1),
+                                                      (i)*cols + (j+1),
+                                                      (i+1)*cols + (j),
+                                                      (i+1)*cols + (j+1)]
+                                    else:
+                                        if j == cols-1:
+                                            neighbours = [(i-1)*cols + (j-1),
+                                                          (i-1)*cols + (j),
+                                                          (i)*cols + (j-1),
+                                                          (i+1)*cols + (j-1),
+                                                          (i+1)*cols + (j)]
+                                        else:
+                                            neighbours = [(i-1)*cols + (j-1),
+                                                          (i-1)*cols + (j),
+                                                          (i-1)*cols + (j+1),
+                                                          (i)*cols + (j-1),
+                                                          (i)*cols + (j+1),
+                                                          (i+1)*cols + (j-1),
+                                                          (i+1)*cols + (j),
+                                                          (i+1)*cols + (j+1)]
+            for neighbour in neighbours:
+                M[i*cols + j, neighbour] = 1
+                M[neighbour, i*cols + j] = 1
+            
+    return M
 
-map_size = 9
-p_map = np.array([[  0,   0,   0],
-                 [5/6, 7/3, 5/6],
-                 [  0,   0,   0]])
-mines = 1
-excess_p = np.sum(p_map) - mines
+adj = make_matrix(7,7)
 
-while excess_p >0:
-    smallest_decrement = np.min(p_map[p_map > 0])
-    n_positives = np.sum(p_map > 0)
-    uniform_decrement = excess_p/n_positives
-    p_map -= min(smallest_decrement, uniform_decrement)
-    p_map = np.clip(p_map, 0, None)
-
-    excess_p = np.sum(p_map) - mines
-    print(p_map)
-    print(excess_p)
-    print('---')
-print(p_map)
-
-
-
-# smallest_decrement = np.min(p_map[p_map > 0])
-# p_map -= np.min(p_map[p_map > 0])
-# p_map = np.clip(p_map, 0, None)
-# print(p_map)
-# argmin = randargmin(p_map, keepdims=True)
-# print(argmin)
-# print(p_map.flatten[argmin])
-# c=[randargmin(p_map, axis=None) for i in range(100000)]
-# print(np.bincount(c))
+plt.spy(adj)
+plt.show()
