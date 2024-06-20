@@ -1,8 +1,73 @@
 import numpy as np
+import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 from conf import *
 from utils.functions import *
 from board import Board
 
+class GIGAAI:
+    def __init__(self, board, seed=0):
+        np.random.seed(seed)
+        self.A_full = self.make_matrix_sparse(board)
+        
+    def make_matrix_sparse(self, board):
+        rows, cols = board.digg_map.shape
+        diag_block = sp.eye_array(cols, k=1) + sp.eye_array(cols, k=-1)
+        off_block = diag_block + sp.eye_array(cols)
+        full_matrix = sp.kron(sp.eye_array(rows), diag_block) + sp.kron(sp.eye_array(rows,k=1)+sp.eye_array(rows,k=-1), off_block)
+        return full_matrix
+
+    def linear_problem(self, board, n_bombs=None):
+        dof_mask = (board.digg_map.ravel() >= 0)
+        b = board.digg_map.ravel()[dof_mask]
+    
+        A = self.A_full[dof_mask]
+        A = A[:,np.logical_not(dof_mask)]
+
+        print(f"A: {A.shape}")
+        print(f"b: {b.shape}")
+
+        if n_bombs:
+            np.append(b, n_bombs)
+            A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
+        
+        return A, b, dof_mask
+
+    def solve_linear_problem(self, board, A, b, dof_mask):
+        x = spla.lsqr(A, b)
+
+        nrow, ncol = board.digg_map.shape
+
+        full_x = np.inf * np.ones(nrow * ncol)
+        full_x[np.logical_not(dof_mask)] = x[0]
+        play_idx = np.argmin(full_x)
+        print(play_idx)
+        play_pos = self.get_pos(board, play_idx)
+        return play_pos
+        
+
+    def get_pos(self, board, linear_idx):
+        nrow, ncol = board.digg_map.shape
+        col = linear_idx // nrow
+        row = linear_idx % ncol
+        return row, col
+
+    def play_one_move(self, board):
+        if np.sum(board.digg_map == -1) == MINES:
+            board
+            self.p_map[board.digg_map == -1] = 1
+            print("all bombs found!")
+            return
+        
+        A, b, dof_mask = self.linear_problem(board)
+        play_pos = self.solve_linear_problem(board, A, b, dof_mask)
+
+        return play_pos
+    
+
+        
+    
+    
 class AI:
     def __init__(self, board, seed=0):
         np.random.seed(seed)
