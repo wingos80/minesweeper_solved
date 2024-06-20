@@ -7,7 +7,7 @@ import pygame as pg
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
 from board import Board
-from solver import AI
+# from solver import *
 from conf import *
 
 
@@ -208,7 +208,7 @@ class App:
          """
 
         self.left_click, _, self.right_click = pg.mouse.get_pressed()
-
+        print("hi1")
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
@@ -248,6 +248,7 @@ class App:
                     # Update flag display value
                     self.flags_display.set_value(self.board.mines_remaining())
 
+            print("hi2")
             # Event for when the player clicked to digg a place
             if event.type == pg.MOUSEBUTTONUP:
                     
@@ -274,9 +275,12 @@ class App:
                 
                 
                 # run the solver and stuff
-                self.solver.update_map(self.board)
-                print(self.solver.p_map.T)
-                print(self.board.digg_map.T)
+                # self.solver.update_map(self.board)
+                # play_pos = self.solver.play_one_move(self.board)
+                # print(play_pos)
+                
+                # print(self.solver.p_map.T)
+                # print(self.board.digg_map.T)
 
             if self.won:
                 # Places a flag in all unexplored cells
@@ -386,11 +390,12 @@ class App:
 
     def start(self):
         """ Starts the main loop of the game """
-        self.solver = AI(self.board, seed=SEED)   
+        # self.solver = GIGAAI(self.board, seed=SEED)   
         # cell, prob = self.ai.get_action(self.board)  
         # self.board.digg(cell)
         while True:
             self.check_events()
+            print("hi")
             self.render()
             self.clock.tick(GAME_FPS)
             # pg.time.wait(1000)
