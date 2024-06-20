@@ -16,10 +16,10 @@ UNEXPLORED_CELL = -1
 EXPLORED_CELL = 0
 
 # Resource files constants
-FONT_FILE = "resources\\mine-sweeper-font\\mine-sweeper.ttf"
-SYMBOLS_IMG_SOURCE = "resources\\symbols.png"
-NUMBERS_IMG_SOURCE = "resources\\numbers.png"
-BUTTONFACES_IMG_SOURCE = "resources\\button_faces.png"
+FONT_FILE = "resources/mine-sweeper-font/mine-sweeper.ttf"
+SYMBOLS_IMG_SOURCE = "resources/symbols.png"
+NUMBERS_IMG_SOURCE = "resources/numbers.png"
+BUTTONFACES_IMG_SOURCE = "resources/button_faces.png"
 
 # Display configuration
 CELL_SIZE = 32
