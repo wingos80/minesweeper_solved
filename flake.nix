@@ -18,11 +18,11 @@
         devShells = {
           default = pkgs.mkShell {
             nativeBuildInputs = [
-              pkgs.python3.python-lsp-server
-              pkgs.python3
+              pkgs.python3.pkgs.python-lsp-server
               pkgs.python3.pkgs.numpy
               pkgs.python3.pkgs.scipy
               pkgs.python3.pkgs.matplotlib
+              pkgs.python3.pkgs.pygame
             ];
           };
         };
