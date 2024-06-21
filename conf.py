@@ -1,8 +1,9 @@
 # conf.py
 
 # Gameplay configuration
-BOARD_SIZE = (6, 6)
-MINES = 6
+BOARD_SIZE = (10, 10)
+MINE_FRACTION = 0.2
+MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
 LEFT, RIGHT = 1, 3
@@ -23,7 +24,7 @@ BUTTONFACES_IMG_SOURCE = "resources/button_faces.png"
 
 # Display configuration
 CELL_SIZE = 32
-GAME_FPS = 30
+GAME_FPS = 60
 
 # Number colors from 1 to 9 and other color constants
 C_BLACK      = 0, 0, 0
