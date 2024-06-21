@@ -45,6 +45,8 @@ class GIGAAI:
         play_pos = self.get_pos(board, play_idx)
         return play_pos
         
+    # def solve_constrained_problem(self, board, A, b, dof_mask):
+    #     x0 = 
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
@@ -54,7 +56,7 @@ class GIGAAI:
 
     def play_one_move(self, board):
         # If all uncovered tiles are mines, game is over, return None
-        if np.sum(board.digg_map == -1) == MINES:
+        if np.sum(board.digg_map < 0) == MINES:
             return None
         # If all tiles are uncovered, choose random starting tile
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:

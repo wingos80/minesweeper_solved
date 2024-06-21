@@ -205,13 +205,13 @@ class App:
             if act:
                 self.board.digg(play_pos)
                 self.on_success_dig()
-        else:
-            print("Game finished!")
-            if act:
-                indices_undiscovered = (self.board.digg_map<0).nonzero()
-                indices_undiscovered_tuples = list(zip(*indices_undiscovered))
-                for pos in indices_undiscovered_tuples:
-                    self.board.place_flag(pos)
+        # else:
+        #     if act:
+        #         self.won = True
+        #         indices_undiscovered = (self.board.digg_map<0).nonzero()
+        #         indices_undiscovered_tuples = list(zip(*indices_undiscovered))
+        #         for pos in indices_undiscovered_tuples:
+        #             if self.board.digg_map[pos[0], pos[1]] != -2: self.board.place_flag(pos)
     
     def check_events(self):
         """ Method to manage player events:
@@ -292,10 +292,6 @@ class App:
                 # print(self.solver.p_map.T)
                 # print(self.board.digg_map.T)
 
-            if self.won:
-                # Places a flag in all unexplored cells
-                digg_map = self.board.digg_map
-                digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
 
     def cell_pos(self, pos):
         """ Calculates and returns the cell position from a screen position """
@@ -406,9 +402,13 @@ class App:
         while True:
             self.play_ai(act=True)
             self.check_events()
+            if self.won:
+                # Places a flag in all unexplored cells
+                digg_map = self.board.digg_map
+                digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
             self.render()
             self.clock.tick(GAME_FPS)
-            pg.time.wait(100)
+            # pg.time.wait(100)
 
 
 def main():
