@@ -20,25 +20,25 @@ class GIGAAI:
         return full_matrix
 
     def linear_problem(self, board, n_bombs=None):
-        known_mask = (board.digg_map.ravel() != -1)
-        unknown_mask = np.logical_not(known_mask)
+        known_mask = np.logical_and(board.digg_map.ravel() != -1, board.digg_map.ravel() != 0)
+        unknown_mask = board.digg_map.ravel() == -1
         b = board.digg_map.ravel()[known_mask]
     
         A = self.A_full[known_mask]
-        A = A[:,np.logical_not(known_mask)]
+        # print(A.shape)
 
         include_mask = np.diff(A.tocsc().indptr) != 0
-        true_unknown_mask = np.zeros_like(unknown_mask)
-        true_unknown_mask[unknown_mask] = np.logical_and(unknown_mask[unknown_mask], include_mask)
+        true_unknown_mask = np.logical_and(unknown_mask, include_mask)
         # print(true_unknown_mask)
+        A = A[:,true_unknown_mask]
 
         if n_bombs:
             b = np.append(b, n_bombs)
             A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
 
-        plt.figure()
-        plt.spy(A)
-        plt.show()
+        # plt.figure()
+        # plt.spy(A)
+        # plt.show()
 
         return A, b, known_mask, true_unknown_mask
 
@@ -49,7 +49,7 @@ class GIGAAI:
         nrow, ncol = board.digg_map.shape
         full_x = np.empty(nrow * ncol)
         full_x[:] = np.nan
-        full_x[np.logical_not(known_mask)] = x
+        full_x[unknown_mask] = x
         play_idx = np.nanargmin(full_x)
         play_pos = self.get_pos(board, play_idx)
 
@@ -70,7 +70,7 @@ class GIGAAI:
         nrow, ncol = board.digg_map.shape
         full_x = np.empty(nrow * ncol)
         full_x[:] = np.nan
-        full_x[np.logical_not(known_mask)] = x
+        full_x[unknown_mask] = x
         play_idx = np.nanargmin(full_x)
         play_pos = self.get_pos(board, play_idx)
 

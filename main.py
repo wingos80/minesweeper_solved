@@ -200,7 +200,7 @@ class App:
         # run the solver and stuff
         play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
-        input()
+        # input()
 
         if play_pos:
             print(f"Play at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")

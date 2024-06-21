@@ -1,7 +1,7 @@
 # conf.py
 
 # Gameplay configuration
-BOARD_SIZE = (10, 10)
+BOARD_SIZE = (5, 5)
 MINE_FRACTION = 0.2
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
