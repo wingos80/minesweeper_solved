@@ -1,8 +1,8 @@
 # conf.py
 
 # Gameplay configuration
-BOARD_SIZE = (5, 5)
-MINE_FRACTION = 0.2
+BOARD_SIZE = (25, 25)
+MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants

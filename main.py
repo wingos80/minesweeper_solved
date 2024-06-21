@@ -402,7 +402,7 @@ class App:
 
     def start(self):
         """ Starts the main loop of the game """
-        self.solver = GIGAAI(self.board, seed=0)   
+        self.solver = GIGAAI(self.board, seed=SEED)   
         # cell, prob = self.ai.get_action(self.board)  
         # self.board.digg(cell)
         while True:
