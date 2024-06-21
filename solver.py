@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize as opt
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 from conf import *
@@ -35,18 +36,39 @@ class GIGAAI:
 
     def solve_linear_problem(self, board, A, b, dof_mask):
         x = spla.lsqr(A, b)
+        # print(f"LSQR: {x[0]}")
 
         nrow, ncol = board.digg_map.shape
 
-        full_x = np.inf * np.ones(nrow * ncol)
+        full_x = np.empty(nrow * ncol)
+        full_x[:] = np.nan
         full_x[np.logical_not(dof_mask)] = x[0]
-        play_idx = np.argmin(full_x)
-        # print(play_idx)
+        play_idx = np.nanargmin(full_x)
         play_pos = self.get_pos(board, play_idx)
-        return play_pos
+
+        flag_pos_list = []
+        for flag_idx in (full_x[dof_mask] >= 0.99).nonzero()[0]:
+            # print(self.get_pos(board, flag_idx))
+            flag_pos_list.append(self.get_pos(board, flag_idx))            
         
-    # def solve_constrained_problem(self, board, A, b, dof_mask):
-    #     x0 = 
+        return play_pos, flag_pos_list
+        
+    def solve_constrained_problem(self, board, A, b, dof_mask):
+        n_undiscovered = np.count_nonzero(board.digg_map == -1)
+        x0 = MINES / n_undiscovered * np.ones(A.shape[1])
+        residual = lambda x: A@x - b
+        x = opt.least_squares(residual, x0, bounds=(0,1)).x
+        # print(f"Opt: {x}")
+
+        nrow, ncol = board.digg_map.shape
+        full_x = np.empty(nrow * ncol)
+        full_x[:] = np.nan
+        full_x[np.logical_not(dof_mask)] = x[0]
+        play_idx = np.nanargmin(full_x)
+        play_pos = self.get_pos(board, play_idx)
+
+        return play_pos, flag_pos_list
+        
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
@@ -61,10 +83,13 @@ class GIGAAI:
         # If all tiles are uncovered, choose random starting tile
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
             return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1]))
-        
         A, b, dof_mask = self.linear_problem(board, n_bombs=MINES)
-        play_pos = self.solve_linear_problem(board, A, b, dof_mask)
+        with np.printoptions(precision=2, suppress=True):
+            play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, dof_mask)
+            # play_pos2, flag_pos_list2 = self.solve_constrained_problem(board, A, b, dof_mask)
 
+        print(flag_pos_list)
+        
         return play_pos
     
 
