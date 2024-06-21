@@ -200,11 +200,13 @@ class App:
         # run the solver and stuff
         play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
-        print(play_pos)
+        input()
+
         if play_pos:
             print(f"Play at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
             if act:
-                self.board.digg(play_pos)
+                if not self.board.digg(play_pos): self.end_game()
+                
                 for flag_pos in flag_pos_list:
                     self.board.place_flag(flag_pos)
                 
@@ -404,7 +406,7 @@ class App:
         # cell, prob = self.ai.get_action(self.board)  
         # self.board.digg(cell)
         while True:
-            self.play_ai(act=True)
+            if self.alive: self.play_ai(act=True)
             self.check_events()
             if self.won:
                 # Places a flag in all unexplored cells
@@ -413,6 +415,7 @@ class App:
             self.render()
             self.clock.tick(GAME_FPS)
             # pg.time.wait(100)
+            # input()
 
 
 def main():
