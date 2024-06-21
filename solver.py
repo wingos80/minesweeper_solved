@@ -19,7 +19,7 @@ class GIGAAI:
         return full_matrix
 
     def linear_problem(self, board, n_bombs=None):
-        dof_mask = (board.digg_map.ravel() >= 0)
+        dof_mask = (board.digg_map.ravel() != -1)
         b = board.digg_map.ravel()[dof_mask]
     
         A = self.A_full[dof_mask]
@@ -45,10 +45,10 @@ class GIGAAI:
         full_x[np.logical_not(dof_mask)] = x[0]
         play_idx = np.nanargmin(full_x)
         play_pos = self.get_pos(board, play_idx)
+        print(play_pos)
 
         flag_pos_list = []
-        for flag_idx in (full_x[dof_mask] >= 0.99).nonzero()[0]:
-            # print(self.get_pos(board, flag_idx))
+        for flag_idx in (full_x >= 0.99).nonzero()[0]:
             flag_pos_list.append(self.get_pos(board, flag_idx))            
         
         return play_pos, flag_pos_list
@@ -67,6 +67,10 @@ class GIGAAI:
         play_idx = np.nanargmin(full_x)
         play_pos = self.get_pos(board, play_idx)
 
+        flag_pos_list = []
+        for flag_idx in (full_x >= 0.99).nonzero()[0]:
+            flag_pos_list.append(self.get_pos(board, flag_idx))            
+
         return play_pos, flag_pos_list
         
 
@@ -79,18 +83,19 @@ class GIGAAI:
     def play_one_move(self, board):
         # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map < 0) == MINES:
-            return None
+            return None, None
+        
         # If all tiles are uncovered, choose random starting tile
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
-            return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1]))
-        A, b, dof_mask = self.linear_problem(board, n_bombs=MINES)
-        with np.printoptions(precision=2, suppress=True):
-            play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, dof_mask)
-            # play_pos2, flag_pos_list2 = self.solve_constrained_problem(board, A, b, dof_mask)
-
-        print(flag_pos_list)
+            return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1])), []
         
-        return play_pos
+        A, b, dof_mask = self.linear_problem(board, n_bombs=MINES)
+        play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, dof_mask)
+        # play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, dof_mask)
+
+        print(f"test: {play_pos}")
+
+        return play_pos, flag_pos_list
     
 
         

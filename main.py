@@ -198,12 +198,16 @@ class App:
 
     def play_ai(self, act=False):
         # run the solver and stuff
-        play_pos = self.solver.play_one_move(self.board)
+        play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
+        print(play_pos)
         if play_pos:
             print(f"Play at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
             if act:
                 self.board.digg(play_pos)
+                for flag_pos in flag_pos_list:
+                    self.board.place_flag(flag_pos)
+                
                 self.on_success_dig()
         # else:
         #     if act:
