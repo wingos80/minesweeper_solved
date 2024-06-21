@@ -24,12 +24,12 @@ class GIGAAI:
         A = self.A_full[dof_mask]
         A = A[:,np.logical_not(dof_mask)]
 
-        print(f"A: {A.shape}")
-        print(f"b: {b.shape}")
-
         if n_bombs:
-            np.append(b, n_bombs)
+            b = np.append(b, n_bombs)
             A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
+
+        # print(f"A: {A.shape}")
+        # print(f"b: {b.shape}")
         
         return A, b, dof_mask
 
@@ -41,7 +41,7 @@ class GIGAAI:
         full_x = np.inf * np.ones(nrow * ncol)
         full_x[np.logical_not(dof_mask)] = x[0]
         play_idx = np.argmin(full_x)
-        print(play_idx)
+        # print(play_idx)
         play_pos = self.get_pos(board, play_idx)
         return play_pos
         
@@ -50,16 +50,17 @@ class GIGAAI:
         nrow, ncol = board.digg_map.shape
         col = linear_idx // nrow
         row = linear_idx % ncol
-        return row, col
+        return col, row
 
     def play_one_move(self, board):
+        # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map == -1) == MINES:
-            board
-            self.p_map[board.digg_map == -1] = 1
-            print("all bombs found!")
-            return
+            return None
+        # If all tiles are uncovered, choose random starting tile
+        if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
+            return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1]))
         
-        A, b, dof_mask = self.linear_problem(board)
+        A, b, dof_mask = self.linear_problem(board, n_bombs=MINES)
         play_pos = self.solve_linear_problem(board, A, b, dof_mask)
 
         return play_pos

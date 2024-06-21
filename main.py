@@ -7,7 +7,7 @@ import pygame as pg
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
 from board import Board
-# from solver import *
+from solver import *
 from conf import *
 
 
@@ -196,6 +196,23 @@ class App:
                 len(digg_map[digg_map == -1]) < BOARD_SIZE[0] * BOARD_SIZE[1]:
             self.start_time = self.get_time()
 
+    def play_ai(self, act=False):
+        # run the solver and stuff
+        play_pos = self.solver.play_one_move(self.board)
+
+        if play_pos:
+            print(f"Play at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
+            if act:
+                self.board.digg(play_pos)
+                self.on_success_dig()
+        else:
+            print("Game finished!")
+            if act:
+                indices_undiscovered = (self.board.digg_map<0).nonzero()
+                indices_undiscovered_tuples = list(zip(*indices_undiscovered))
+                for pos in indices_undiscovered_tuples:
+                    self.board.place_flag(pos)
+    
     def check_events(self):
         """ Method to manage player events:
 
@@ -206,9 +223,8 @@ class App:
             If the player press right click, place/remove a flag on a cell.
 
          """
-
+         
         self.left_click, _, self.right_click = pg.mouse.get_pressed()
-        print("hi1")
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
@@ -248,7 +264,6 @@ class App:
                     # Update flag display value
                     self.flags_display.set_value(self.board.mines_remaining())
 
-            print("hi2")
             # Event for when the player clicked to digg a place
             if event.type == pg.MOUSEBUTTONUP:
                     
@@ -273,11 +288,6 @@ class App:
 
                     self.on_success_dig()
                 
-                
-                # run the solver and stuff
-                # self.solver.update_map(self.board)
-                # play_pos = self.solver.play_one_move(self.board)
-                # print(play_pos)
                 
                 # print(self.solver.p_map.T)
                 # print(self.board.digg_map.T)
@@ -390,15 +400,15 @@ class App:
 
     def start(self):
         """ Starts the main loop of the game """
-        # self.solver = GIGAAI(self.board, seed=SEED)   
+        self.solver = GIGAAI(self.board, seed=0)   
         # cell, prob = self.ai.get_action(self.board)  
         # self.board.digg(cell)
         while True:
+            self.play_ai(act=True)
             self.check_events()
-            print("hi")
             self.render()
             self.clock.tick(GAME_FPS)
-            # pg.time.wait(1000)
+            pg.time.wait(100)
 
 
 def main():
