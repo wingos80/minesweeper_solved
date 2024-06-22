@@ -1,7 +1,4 @@
-# main.py
-
 import sys
-import math
 import pygame as pg
 
 from msdraw import draw_border, swap_color, render_cell
@@ -200,12 +197,19 @@ class App:
         # run the solver and stuff
         play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
-        # input()
-
         if play_pos:
-            print(f"Play at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
+            # print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
             if act:
-                if not self.board.digg(play_pos): self.end_game()
+
+                if not self.board.digg(play_pos): 
+                    # # first place flags on all unrevealed cells
+                    # digg_map = self.board.digg_map
+                    # self.board.digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
+                    self.end_game()
+                    # if self.auto_restart:
+                    #     self.render()
+                    #     pg.time.wait(1000)
+                    #     self.restart()
                 
                 for flag_pos in flag_pos_list:
                     self.board.place_flag(flag_pos)
@@ -224,12 +228,16 @@ class App:
 
             If the player press 'ESC', exit the game.
             If the player press 'r', restart the game.
+            If the player press 'RETURN', the solver is toggled.
+            If the player press 'A', the solver plays one move.
 
             If the player 'press' left click, digg in a cell.
             If the player press right click, place/remove a flag on a cell.
 
          """
          
+        if self.auto and self.alive: self.play_ai(act=True)
+
         self.left_click, _, self.right_click = pg.mouse.get_pressed()
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -257,7 +265,26 @@ class App:
                 # Starts a new game with expert difficulty
                 if event.key == pg.K_3:
                     self.restart((30, 16), 99)
+                
+                # Toggles auto restart
+                if event.key == pg.K_BACKSPACE:
+                    if self.auto_restart: 
+                        self.auto_restart = False
+                    else:
+                        self.auto_restart = True
+                    print(f"Auto restart: {self.auto_restart}")
 
+                # Toggles solver
+                if event.key == pg.K_RETURN:
+                    if self.auto: 
+                        self.auto = False
+                    else:
+                        self.auto = True
+                    print(f"Auto solve: {self.auto}")
+
+                # Plays one move with the solver
+                if event.key == pg.K_a and self.alive:
+                    self.play_ai(act=True)
             # If the player is not alive, skip.
             if not self.alive or self.won:
                 continue
@@ -297,6 +324,10 @@ class App:
                 
                 # print(self.solver.p_map.T)
                 # print(self.board.digg_map.T)
+        if self.won:
+            # Places a flag in all unexplored cells
+            digg_map = self.board.digg_map
+            digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
 
 
     def cell_pos(self, pos):
@@ -400,27 +431,46 @@ class App:
     def get_time(self):
         return pg.time.get_ticks() * 0.001
 
-    def start(self):
+    def check_auto_restart(self):
+        """ Checks if game should automatically restart"""
+        if self.auto_restart:
+            if not self.alive or self.won:
+                pg.time.wait(1000)
+                self.restart()
+            else:
+                pass
+    
+    def print_instructions(self):
+        """ Prints the game instructions """
+        print('\n----------------------')
+        print('Controls:')
+        print('    ESC: Exit')
+        print('    r: Restart')
+        print('    ENTER: Toggle solver')
+        print('    BACKSPACE: Toggle auto restart')
+        print('    A: Play one move with solver')
+        print('')
+        print(f"Auto solve: {self.auto}")
+        print(f"Auto restart: {self.auto_restart}")
+        print('\n----------------------')
+
+    def start(self, auto, auto_restart):
         """ Starts the main loop of the game """
-        self.solver = GIGAAI(self.board, seed=SEED)   
-        # cell, prob = self.ai.get_action(self.board)  
-        # self.board.digg(cell)
+        self.solver = LS(self.board, seed=SEED)   
+        self.auto, self.auto_restart = auto, auto_restart
+
+        self.print_instructions()
+
         while True:
-            if self.alive: self.play_ai(act=True)
             self.check_events()
-            if self.won:
-                # Places a flag in all unexplored cells
-                digg_map = self.board.digg_map
-                digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
             self.render()
+            self.check_auto_restart()
             self.clock.tick(GAME_FPS)
-            # pg.time.wait(100)
-            # input()
 
 
 def main():
     app = App(BOARD_SIZE, MINES, random_place=True)
-    app.start()
+    app.start(auto=0, auto_restart=0)
 
 
 if __name__ == '__main__':
