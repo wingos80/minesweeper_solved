@@ -456,7 +456,7 @@ class App:
 
     def start(self, auto, auto_restart):
         """ Starts the main loop of the game """
-        self.solver = LS(self.board, seed=SEED)   
+        self.solver = GIGAAI(self.board, seed=SEED)   
         self.auto, self.auto_restart = auto, auto_restart
 
         self.print_instructions()
