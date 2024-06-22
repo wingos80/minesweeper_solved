@@ -448,7 +448,7 @@ class App:
         print('    r        : Restart')
         print('    ENTER    : Toggle solver')
         print('    BACKSPACE: Toggle auto restart')
-        print('    A        : Play one move with solver')
+        print('    A        : Play one move with solver (only if solver is inactive)')
         print('\n----------------------')
 
     def start(self, auto, auto_restart):

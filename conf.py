@@ -1,5 +1,3 @@
-# conf.py
-
 # Gameplay configuration
 BOARD_SIZE = (25, 25)
 MINE_FRACTION = 0.15

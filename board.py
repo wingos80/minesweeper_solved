@@ -1,5 +1,3 @@
-# board.py
-
 import numpy as np
 import random
 
@@ -7,13 +5,13 @@ from conf import *
 
 class Board:
     """ The game base logic """
-
+    
     def __init__(self, size, mines, seed=None, random_place=True):
         if seed:
             random.seed(seed)
-
-        self.random_place = random_place
         
+        # toggle place mines randomly
+        self.random_place = random_place
         self.size = size
 
         # The ammount of mines to put in the board

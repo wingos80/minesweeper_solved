@@ -4,7 +4,6 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 from conf import *
 from utils.functions import *
-from board import Board
 import matplotlib.pyplot as plt
 
 class GIGAAI:
