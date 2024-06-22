@@ -31,7 +31,7 @@ class App:
         self.window = pg.display.set_mode(self.screen_size)
         pg.display.set_caption("Mine Sweeper")
 
-        self.board = Board(board_size, mines, seed=SEED, random_place=random_place)
+        self.board = Board(board_size, mines, seed=None, random_place=random_place)
         self.flags_display = NumberDisplay(self.board.mines_remaining())
         self.clock_display = NumberDisplay(0)
 
@@ -444,19 +444,16 @@ class App:
         """ Prints the game instructions """
         print('\n----------------------')
         print('Controls:')
-        print('    ESC: Exit')
-        print('    r: Restart')
-        print('    ENTER: Toggle solver')
+        print('    ESC      : Exit')
+        print('    r        : Restart')
+        print('    ENTER    : Toggle solver')
         print('    BACKSPACE: Toggle auto restart')
-        print('    A: Play one move with solver')
-        print('')
-        print(f"Auto solve: {self.auto}")
-        print(f"Auto restart: {self.auto_restart}")
+        print('    A        : Play one move with solver')
         print('\n----------------------')
 
     def start(self, auto, auto_restart):
         """ Starts the main loop of the game """
-        self.solver = GIGAAI(self.board, seed=SEED)   
+        self.solver = GIGAAI(self.board, seed=None)
         self.auto, self.auto_restart = auto, auto_restart
 
         self.print_instructions()

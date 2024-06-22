@@ -8,8 +8,9 @@ from conf import *
 class Board:
     """ The game base logic """
 
-    def __init__(self, size, mines, seed=0, random_place=True):
-        random.seed(seed)
+    def __init__(self, size, mines, seed=None, random_place=True):
+        if seed:
+            random.seed(seed)
 
         self.random_place = random_place
         

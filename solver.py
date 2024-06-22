@@ -8,8 +8,10 @@ from board import Board
 import matplotlib.pyplot as plt
 
 class GIGAAI:
-    def __init__(self, board, seed=0):
-        np.random.seed(seed)
+    def __init__(self, board, seed=None):
+        if seed:
+            np.random.seed(seed)
+            
         self.A_full = self.make_matrix_sparse(board)
         self.x_prev = np.zeros(board.digg_map.shape[0] * board.digg_map.shape[1])
         
