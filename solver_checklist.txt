@@ -1,0 +1,3 @@
+add more degrees of freedom if guess for no bomb is uncertain (add cells not next to numbers to the unknowns, might need to add every unknown cell to have a well posed equation)
+get constrained solve working
+make gui for next move guess
