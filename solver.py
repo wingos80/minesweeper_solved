@@ -49,12 +49,15 @@ class GIGAAI:
     def linear_problem(self, board, n_bombs=None):
         known_mask = np.logical_and(board.digg_map.ravel() != -1, board.digg_map.ravel() != 0)
         unknown_mask = board.digg_map.ravel() == -1
+        flag_mask = board.digg_map.ravel() == -2
         b = board.digg_map.ravel()[known_mask]
+        
     
         A = self.A_full[known_mask]
+        b = b - A[:,flag_mask].sum(axis=1)
 
         include_mask = np.diff(A.tocsc().indptr) != 0
-        true_unknown_mask = np.logical_and(unknown_mask, include_mask)
+        true_unknown_mask = np.logical_and(np.logical_and(unknown_mask, include_mask), np.logical_not(flag_mask))
         A = A[:,true_unknown_mask]
 
         if n_bombs:
@@ -75,18 +78,21 @@ class GIGAAI:
         # nrow, ncol = board.digg_map.shape
         # self.x_full = np.empty(nrow * ncol)
         self.x_full[:] = np.nan
-        self.x_full[unknown_mask] = np.abs(x)
+        self.x_full[unknown_mask] = x#np.abs(x)
         play_idx = np.nanargmin(self.x_full)
+        print(f'play_idx: {play_idx}, pos: {self.get_pos(board, play_idx)}')
         play_pos = self.get_pos(board, play_idx)
 
-        # flag_pos_list = []
-        # for flag_idx in (self.x_full >= 0.99).nonzero()[0]:
-        #     flag_pos_list.append(self.get_pos(board, flag_idx))
+        print(self.x_full)
+
+        flag_pos_list = []
+        for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
+            flag_pos_list.append(self.get_pos(board, flag_idx))
         # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
 
         # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
         # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
-        return play_pos, []# flag_pos_list
+        return play_pos, flag_pos_list
         
     def solve_constrained_problem(self, board, A, b, known_mask, unknown_mask):
         n_undiscovered = np.count_nonzero(board.digg_map == -1)
@@ -102,18 +108,25 @@ class GIGAAI:
         play_idx = np.nanargmin(self.x_full)
         play_pos = self.get_pos(board, play_idx)
 
-        # flag_pos_list = []
-        # for flag_idx in (self.x_full >= 1).nonzero()[0]:
-        #     flag_pos_list.append(self.get_pos(board, flag_idx))
+        print(self.x_full)
+
+        flag_pos_list = []
+        for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
+            flag_pos_list.append(self.get_pos(board, flag_idx))
         # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
 
-        return play_pos, []#flag_pos_list
+        return play_pos, flag_pos_list
         
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
-        col = linear_idx // nrow
         row = linear_idx % ncol
+        col = linear_idx // (ncol)
+        # print('')
+        # print('this is get pos')
+        # print(f"nrow: {nrow}, ncol: {ncol}, linear_idx: {linear_idx}")
+        # print(f'calculated row col: {row}, {col}')
+        # print('')
         return col, row
 
     def play_one_move(self, board):
@@ -122,18 +135,18 @@ class GIGAAI:
         # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map < 0) == MINES:
             return None, None
-        
+         
         # If all tiles are uncovered, choose random starting tile
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
             return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1])), []
         
         with np.printoptions(precision=2, suppress=True):
-            play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, known_mask, unknown_mask)
-            # play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, known_mask, unknown_mask)
+            # play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, known_mask, unknown_mask)
+            play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, known_mask, unknown_mask)
             # print(f"PLAY\n LSQR: {play_pos}\n Opt: {play_pos2}")
             # print(f"FLAG\n LSQR: {flag_pos_list}\n Opt: {flag_pos_list2}")
 
-        return play_pos, []#flag_pos_list
+        return play_pos, flag_pos_list
     
 
         

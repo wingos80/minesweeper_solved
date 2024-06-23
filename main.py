@@ -14,9 +14,12 @@ class App:
     interactions with the board, and methods to display the current state of
     the board """
 
-    def __init__(self, board_size, mines, random_place=True):
+    def __init__(self, board_size, mines, seed=None, random_place=True):
         # Initialize pygame
         pg.init()
+
+        # Initialize seed
+        self.seed = seed
 
         # Increases the maximum recursion limit for cases where the map is
         # too large and the digg recursion exceeds its normal depth limit
@@ -32,7 +35,7 @@ class App:
         self.window = pg.display.set_mode(self.screen_size)
         pg.display.set_caption("Mine Sweeper")
 
-        self.board = Board(board_size, mines, seed=None, random_place=random_place)
+        self.board = Board(board_size, mines, seed=self.seed, random_place=random_place)
         self.flags_display = NumberDisplay(self.board.mines_remaining())
         self.clock_display = NumberDisplay(0)
 
@@ -40,6 +43,8 @@ class App:
             self, (self.screen_size[0] // 2 - 13, 16),
             self.restart
         )
+
+        self.solver = GIGAAI(self.board, seed=self.seed)
 
         self.clock = pg.time.Clock()
         self.start_time = None
@@ -180,7 +185,8 @@ class App:
 
         oldboard_size = self.board.size
 
-        self.board.__init__(board_size, mines)
+        self.board.__init__(board_size, mines, seed=self.seed)
+        self.solver = GIGAAI(self.board, seed=self.seed)
 
         self.start_time = None
         self.alive = True
@@ -215,7 +221,7 @@ class App:
         play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
         if play_pos:
-            # print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
+            print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
             if act:
 
                 if not self.board.digg(play_pos): 
@@ -287,11 +293,11 @@ class App:
                 
                 # Toggles AI actions
                 if event.key == pg.K_b:
-                    if self.act:
-                        self.act = False
+                    if self.aid:
+                        self.aid = False
                     else:
-                        self.act = True
-                    print(f"Solver action: {self.act}")
+                        self.aid = True
+                    print(f"Solver action: {self.aid}")
 
                 # Toggles auto restart
                 if event.key == pg.K_BACKSPACE:
@@ -377,9 +383,8 @@ class App:
         # print(self.solver.x_full)
         for i in range(w):
             for j in range(h):
-                if board.digg_map[i, j] == UNEXPLORED_CELL:
-                    surf = self.render_likelihood(self.solver.x_full[i*w + j])
-                    
+                if board.digg_map[i, j] == UNEXPLORED_CELL and self.aid:
+                    surf = self.render_likelihood(self.solver.x_full[i*h + j])
                 else:
                     surf = self.cell_symbols[board.digg_map[i, j]]
                 # surf = self.render_likelihood(self.solver.x_full[i*w + j])
@@ -481,14 +486,12 @@ class App:
         print('    r        : Restart')
         print('    ENTER    : Toggle solver')
         print('    BACKSPACE: Toggle auto restart')
-        print('    B        : Toggle solver action')
         print('    A        : Play one move with solver (only if solver is inactive)')
         print('----------------------\n')
 
-    def start(self, auto, auto_restart, act):
+    def start(self, auto, auto_restart, aid):
         """ Starts the main loop of the game """
-        self.solver = GIGAAI(self.board, seed=None)
-        self.auto, self.auto_restart, self.act = auto, auto_restart, act
+        self.auto, self.auto_restart, self.aid = auto, auto_restart, aid
 
         self.print_instructions()
 
@@ -500,11 +503,11 @@ class App:
 
 
 def main():
-    app = App(BOARD_SIZE, MINES, random_place=True)
-    app.start(auto=0, auto_restart=0, act=1)
+    app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True)
+    app.start(auto=0, auto_restart=0, aid=1)
 
 
 if __name__ == '__main__':
-    SEED = 4
+    SEED = 1
     main()
     
