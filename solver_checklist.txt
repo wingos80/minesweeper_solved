@@ -1,4 +1,4 @@
-- benchmarker (without GUI, run X times, show run statistics)
+- benchmarker (without GUI, run X times, show run statistics e.g. underdetermined-ness of systems, runtime, success rates...)
 - fix the row, column or non square grid solving
 - add more degrees of freedom if guess for no bomb is uncertain (add cells not next to numbers to the unknowns, might need to add every unknown cell to have a well posed equation)
 	- figure out ways to add new equations than just using the 	current revealed numbers
