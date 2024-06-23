@@ -37,7 +37,7 @@ class GIGAAI:
             np.random.seed(seed)
             
         self.A_full = self.make_matrix_sparse(board)
-        self.x_full = np.zeros(board.digg_map.shape[0] * board.digg_map.shape[1])
+        self.x_full = np.nan * np.ones(board.digg_map.shape[0] * board.digg_map.shape[1])
         
     def make_matrix_sparse(self, board):
         rows, cols = board.digg_map.shape
@@ -75,7 +75,7 @@ class GIGAAI:
         # nrow, ncol = board.digg_map.shape
         # self.x_full = np.empty(nrow * ncol)
         self.x_full[:] = np.nan
-        self.x_full[unknown_mask] = x
+        self.x_full[unknown_mask] = np.abs(x)
         play_idx = np.nanargmin(self.x_full)
         play_pos = self.get_pos(board, play_idx)
 
@@ -117,6 +117,8 @@ class GIGAAI:
         return col, row
 
     def play_one_move(self, board):
+        A, b, known_mask, unknown_mask = self.linear_problem(board)
+
         # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map < 0) == MINES:
             return None, None
@@ -125,7 +127,6 @@ class GIGAAI:
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
             return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1])), []
         
-        A, b, known_mask, unknown_mask = self.linear_problem(board)
         with np.printoptions(precision=2, suppress=True):
             play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, known_mask, unknown_mask)
             # play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, known_mask, unknown_mask)

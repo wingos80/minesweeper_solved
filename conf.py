@@ -1,8 +1,9 @@
 import numpy as np
+import matplotlib as mpl
 
 # Gameplay configuration
-BOARD_SIZE = (4, 4)
-MINE_FRACTION = 0.15
+BOARD_SIZE = (10, 10)
+MINE_FRACTION = 0.25
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
@@ -47,5 +48,19 @@ NUMBER_COLORS = [C_BLACK, C_BLUE, C_DARK_GREEN, C_RED, C_DARK_BLUE,
 
 
 # min max values for bomb likelihood
-VMIN, VMAX = -0.5, 1.5
-LIKELIHOOD_COLOR = lambda x: ((x-VMIN)/(VMAX-VMIN)*(255-125) + 125, (-x+VMIN)/(VMAX-VMIN)*(255-125) + 125, 0) if not np.isnan(x) else C_RED
+VMIN, VMAX = -0.2, 1.2
+RED_MAP = lambda x: ((-x+VMIN)/(VMAX-VMIN)*(255-125) + 125, (x-VMIN)/(VMAX-VMIN)*(255-125) + 125, 125) if not np.isnan(x) else C_LIGHT_GRAY
+cmap = mpl.cm.get_cmap('RdYlGn')
+LIKELIHOOD_COLOR = lambda x: np.array(cmap((x-VMIN)/(VMAX-VMIN)))[:3]*255 if not np.isnan(x) else C_LIGHT_GRAY
+
+def LIKELIHOOD_COLOR(x):
+    if not np.isnan(x):
+        val = (x-VMIN)/(VMAX-VMIN)
+        if x < 0:
+            return (0,0,0)
+        elif x > 1:
+            return (255,255,255)
+        else:
+            return np.array(cmap(x))[:3]*255
+    else:
+        return C_LIGHT_GRAY

@@ -119,7 +119,7 @@ class App:
 
         draw_border(
             surf, (0, 0), (size, size), 2,
-            C_LIGHT_GRAY, C_WHITE, C_GRAY, C_LIGHT_GRAY
+            LIKELIHOOD_COLOR(value), C_WHITE, C_GRAY, LIKELIHOOD_COLOR(value)
         )
 
         return surf
@@ -232,6 +232,8 @@ class App:
                     self.board.place_flag(flag_pos)
                 
                 self.on_success_dig()
+                
+        _, _ = self.solver.play_one_move(self.board)
         # else:
         #     if act:
         #         self.won = True
@@ -372,11 +374,12 @@ class App:
         off_x, off_y = self.offset
 
         # Render the digg_map status of the board
+        # print(self.solver.x_full)
         for i in range(w):
             for j in range(h):
                 if board.digg_map[i, j] == UNEXPLORED_CELL:
                     surf = self.render_likelihood(self.solver.x_full[i*w + j])
-                    print(self.solver.x_full)
+                    
                 else:
                     surf = self.cell_symbols[board.digg_map[i, j]]
                 # surf = self.render_likelihood(self.solver.x_full[i*w + j])
@@ -498,7 +501,7 @@ class App:
 
 def main():
     app = App(BOARD_SIZE, MINES, random_place=True)
-    app.start(auto=0, auto_restart=0, act=0)
+    app.start(auto=0, auto_restart=0, act=1)
 
 
 if __name__ == '__main__':
