@@ -1,5 +1,6 @@
 import sys
 import pygame as pg
+import numpy as np
 
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
@@ -99,6 +100,22 @@ class App:
         size = CELL_SIZE
         surf = pg.Surface((size, size))
         surf.fill(C_LIGHT_GRAY)
+
+        draw_border(
+            surf, (0, 0), (size, size), 2,
+            C_LIGHT_GRAY, C_WHITE, C_GRAY, C_LIGHT_GRAY
+        )
+
+        return surf
+
+    def render_likelihood(self, value):
+        """
+        Returns
+        """
+        size = CELL_SIZE
+        surf = pg.Surface((size, size))
+        
+        surf.fill(LIKELIHOOD_COLOR(value))
 
         draw_border(
             surf, (0, 0), (size, size), 2,
@@ -236,7 +253,7 @@ class App:
 
          """
          
-        if self.auto and self.alive: self.play_ai(act=True)
+        if self.auto and self.alive: self.play_ai(act=self.act)
 
         self.left_click, _, self.right_click = pg.mouse.get_pressed()
         for event in pg.event.get():
@@ -266,6 +283,14 @@ class App:
                 if event.key == pg.K_3:
                     self.restart((30, 16), 99)
                 
+                # Toggles AI actions
+                if event.key == pg.K_b:
+                    if self.act:
+                        self.act = False
+                    else:
+                        self.act = True
+                    print(f"Solver action: {self.act}")
+
                 # Toggles auto restart
                 if event.key == pg.K_BACKSPACE:
                     if self.auto_restart: 
@@ -329,7 +354,6 @@ class App:
             digg_map = self.board.digg_map
             digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
 
-
     def cell_pos(self, pos):
         """ Calculates and returns the cell position from a screen position """
         off_x, off_y = self.offset
@@ -350,7 +374,13 @@ class App:
         # Render the digg_map status of the board
         for i in range(w):
             for j in range(h):
-                surf = self.cell_symbols[board.digg_map[i, j]]
+                if board.digg_map[i, j] == UNEXPLORED_CELL:
+                    surf = self.render_likelihood(self.solver.x_full[i*w + j])
+                    print(self.solver.x_full)
+                else:
+                    surf = self.cell_symbols[board.digg_map[i, j]]
+                # surf = self.render_likelihood(self.solver.x_full[i*w + j])
+                
                 self.window.blit(
                     surf, (i * CELL_SIZE + off_x, j * CELL_SIZE + off_y)
                 )
@@ -448,13 +478,14 @@ class App:
         print('    r        : Restart')
         print('    ENTER    : Toggle solver')
         print('    BACKSPACE: Toggle auto restart')
+        print('    B        : Toggle solver action')
         print('    A        : Play one move with solver (only if solver is inactive)')
         print('----------------------\n')
 
-    def start(self, auto, auto_restart):
+    def start(self, auto, auto_restart, act):
         """ Starts the main loop of the game """
         self.solver = GIGAAI(self.board, seed=None)
-        self.auto, self.auto_restart = auto, auto_restart
+        self.auto, self.auto_restart, self.act = auto, auto_restart, act
 
         self.print_instructions()
 
@@ -467,7 +498,7 @@ class App:
 
 def main():
     app = App(BOARD_SIZE, MINES, random_place=True)
-    app.start(auto=0, auto_restart=0)
+    app.start(auto=0, auto_restart=0, act=0)
 
 
 if __name__ == '__main__':

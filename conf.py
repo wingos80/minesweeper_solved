@@ -1,5 +1,7 @@
+import numpy as np
+
 # Gameplay configuration
-BOARD_SIZE = (20, 20)
+BOARD_SIZE = (4, 4)
 MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
@@ -42,3 +44,8 @@ C_LIGHT      = 216, 216, 216
 C_CYAN       = 0, 128, 128
 NUMBER_COLORS = [C_BLACK, C_BLUE, C_DARK_GREEN, C_RED, C_DARK_BLUE,
                 C_DARK_RED, C_CYAN, C_BLACK, C_GRAY, C_DARK_RED]
+
+
+# min max values for bomb likelihood
+VMIN, VMAX = -0.5, 1.5
+LIKELIHOOD_COLOR = lambda x: ((x-VMIN)/(VMAX-VMIN)*(255-125) + 125, (-x+VMIN)/(VMAX-VMIN)*(255-125) + 125, 0) if not np.isnan(x) else C_RED

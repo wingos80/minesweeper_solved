@@ -37,7 +37,7 @@ class GIGAAI:
             np.random.seed(seed)
             
         self.A_full = self.make_matrix_sparse(board)
-        self.x_prev = np.zeros(board.digg_map.shape[0] * board.digg_map.shape[1])
+        self.x_full = np.zeros(board.digg_map.shape[0] * board.digg_map.shape[1])
         
     def make_matrix_sparse(self, board):
         rows, cols = board.digg_map.shape
@@ -61,31 +61,30 @@ class GIGAAI:
             b = np.append(b, n_bombs)
             A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
 
-        plt.figure()
-        plt.spy(A)
-        plt.show()
+        # plt.figure()
+        # plt.spy(A)
+        # plt.show()
 
         return A, b, known_mask, true_unknown_mask
 
     def solve_linear_problem(self, board, A, b, known_mask, unknown_mask):
-        x0 = self.x_prev[unknown_mask]
+        x0 = self.x_full[unknown_mask]
         x = spla.lsqr(A, b, btol=1e-2, show=False)[0]
         # print(f"LSQR: {x}")
 
-        nrow, ncol = board.digg_map.shape
-        full_x = np.empty(nrow * ncol)
-        full_x[:] = np.nan
-        full_x[unknown_mask] = x
-        self.x_prev = full_x
-        play_idx = np.nanargmin(full_x)
+        # nrow, ncol = board.digg_map.shape
+        # self.x_full = np.empty(nrow * ncol)
+        self.x_full[:] = np.nan
+        self.x_full[unknown_mask] = x
+        play_idx = np.nanargmin(self.x_full)
         play_pos = self.get_pos(board, play_idx)
 
         # flag_pos_list = []
-        # for flag_idx in (full_x >= 0.99).nonzero()[0]:
+        # for flag_idx in (self.x_full >= 0.99).nonzero()[0]:
         #     flag_pos_list.append(self.get_pos(board, flag_idx))
-        # flag_pos_list.append(self.get_pos(board, np.nanargmax(full_x)))
+        # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
 
-        # print(f'\nx_full after playing previous move: \n{self.x_prev.reshape(BOARD_SIZE).T}')
+        # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
         # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
         return play_pos, []# flag_pos_list
         
@@ -96,17 +95,17 @@ class GIGAAI:
         x = opt.least_squares(residual, x0, bounds=(0,1), max_nfev=100).x
         # print(f"Opt: {x}")
 
-        nrow, ncol = board.digg_map.shape
-        full_x = np.empty(nrow * ncol)
-        full_x[:] = np.nan
-        full_x[unknown_mask] = x
-        play_idx = np.nanargmin(full_x)
+        # nrow, ncol = board.digg_map.shape
+        # full_x = np.empty(nrow * ncol)
+        self.x_full[:] = np.nan
+        self.x_full[unknown_mask] = x
+        play_idx = np.nanargmin(self.x_full)
         play_pos = self.get_pos(board, play_idx)
 
         # flag_pos_list = []
-        # for flag_idx in (full_x >= 1).nonzero()[0]:
+        # for flag_idx in (self.x_full >= 1).nonzero()[0]:
         #     flag_pos_list.append(self.get_pos(board, flag_idx))
-        # flag_pos_list.append(self.get_pos(board, np.nanargmax(full_x)))
+        # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
 
         return play_pos, []#flag_pos_list
         
