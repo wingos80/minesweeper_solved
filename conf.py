@@ -1,5 +1,5 @@
 # Gameplay configuration
-BOARD_SIZE = (25, 25)
+BOARD_SIZE = (20, 20)
 MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 

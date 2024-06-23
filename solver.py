@@ -61,9 +61,9 @@ class GIGAAI:
             b = np.append(b, n_bombs)
             A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
 
-        # plt.figure()
-        # plt.spy(A)
-        # plt.show()
+        plt.figure()
+        plt.spy(A)
+        plt.show()
 
         return A, b, known_mask, true_unknown_mask
 
@@ -84,7 +84,9 @@ class GIGAAI:
         # for flag_idx in (full_x >= 0.99).nonzero()[0]:
         #     flag_pos_list.append(self.get_pos(board, flag_idx))
         # flag_pos_list.append(self.get_pos(board, np.nanargmax(full_x)))
-        
+
+        # print(f'\nx_full after playing previous move: \n{self.x_prev.reshape(BOARD_SIZE).T}')
+        # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
         return play_pos, []# flag_pos_list
         
     def solve_constrained_problem(self, board, A, b, known_mask, unknown_mask):

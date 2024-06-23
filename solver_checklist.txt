@@ -1,3 +1,6 @@
-add more degrees of freedom if guess for no bomb is uncertain (add cells not next to numbers to the unknowns, might need to add every unknown cell to have a well posed equation)
-get constrained solve working
-make gui for next move guess
+- fix the row, column or non square grid solving
+- add more degrees of freedom if guess for no bomb is uncertain (add cells not next to numbers to the unknowns, might need to add every unknown cell to have a well posed equation)
+	- figure out ways to add new equations than just using the 	current revealed numbers
+- get constrained solve working
+- make gui for next move guess
+- add colour strings to printing for pretty debugging
