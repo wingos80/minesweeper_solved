@@ -14,12 +14,14 @@ class App:
     interactions with the board, and methods to display the current state of
     the board """
 
-    def __init__(self, board_size, mines, seed=None, random_place=True):
+    def __init__(self, board_size, mines, seed=None, random_place=True, visual=True):
         # Initialize pygame
         pg.init()
 
         # Initialize seed
         self.seed = seed
+
+        self.visual = visual
 
         # Increases the maximum recursion limit for cases where the map is
         # too large and the digg recursion exceeds its normal depth limit
@@ -31,26 +33,26 @@ class App:
         )
 
         self.offset = 13, 56
-
-        self.window = pg.display.set_mode(self.screen_size)
-        pg.display.set_caption("Mine Sweeper")
-
         self.board = Board(board_size, mines, seed=self.seed, random_place=random_place)
-        self.flags_display = NumberDisplay(self.board.mines_remaining())
-        self.clock_display = NumberDisplay(0)
-
-        self.smile_button = SmileButton(
-            self, (self.screen_size[0] // 2 - 13, 16),
-            self.restart
-        )
-
         self.solver = GIGAAI(self.board, seed=self.seed)
+
+        if visual:
+            self.window = pg.display.set_mode(self.screen_size)
+            pg.display.set_caption("Mine Sweeper")
+
+            self.flags_display = NumberDisplay(self.board.mines_remaining())
+            self.clock_display = NumberDisplay(0)
+
+            self.smile_button = SmileButton(
+                self, (self.screen_size[0] // 2 - 13, 16),
+                self.restart
+            )
+            self.background = self.render_background()
+            self.cell_symbols = self.render_symbols()
+
 
         self.clock = pg.time.Clock()
         self.start_time = None
-
-        self.background = self.render_background()
-        self.cell_symbols = self.render_symbols()
 
         self.left_click = False
         self.right_click = False
@@ -192,7 +194,6 @@ class App:
         self.alive = True
         self.won = False
 
-        self.clock_display.set_value(0)
 
         if board_size == oldboard_size:
             return
@@ -202,10 +203,12 @@ class App:
             CELL_SIZE * board_size[1] + 64
         )
 
-        self.smile_button.pos = self.screen_size[0] // 2 - 13, 16
+        if self.visual:
+            self.clock_display.set_value(0)
+            self.smile_button.pos = self.screen_size[0] // 2 - 13, 16
 
-        self.window = pg.display.set_mode(self.screen_size)
-        self.background = self.render_background()
+            self.window = pg.display.set_mode(self.screen_size)
+            self.background = self.render_background()
 
     def on_success_dig(self):
         self.won = self.board.win()
@@ -221,7 +224,7 @@ class App:
         play_pos, flag_pos_list = self.solver.play_one_move(self.board)
 
         if play_pos:
-            print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
+            # print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
             if act:
 
                 if not self.board.digg(play_pos): 
@@ -489,25 +492,27 @@ class App:
         print('    A        : Play one move with solver (only if solver is inactive)')
         print('----------------------\n')
 
-    def start(self, auto, auto_restart, aid):
+    def start(self, auto, auto_restart, aid, act):
         """ Starts the main loop of the game """
-        self.auto, self.auto_restart, self.aid = auto, auto_restart, aid
+        self.auto, self.auto_restart, self.aid, self.act = auto, auto_restart, aid, act
 
         self.print_instructions()
 
         while True:
             self.check_events()
-            self.render()
+            if self.visual: self.render()
+            print(f"Uncovered/Total: {np.count_nonzero(np.logical_not(self.board.digg_map == -1))/(BOARD_SIZE[0]*BOARD_SIZE[1])*100:.2f} %")
+            if self.won: print("Game won!")
             self.check_auto_restart()
             self.clock.tick(GAME_FPS)
 
 
 def main():
-    app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True)
-    app.start(auto=0, auto_restart=0, aid=1)
+    app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
+    app.start(auto=not VISUAL, auto_restart=not VISUAL, aid=1, act=1)
 
 
 if __name__ == '__main__':
-    SEED = 1
+    SEED = None
     main()
     

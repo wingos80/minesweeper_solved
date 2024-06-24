@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib as mpl
 
 # Gameplay configuration
-BOARD_SIZE = (9, 19)
+BOARD_SIZE = (25, 25)
 MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
@@ -24,6 +24,7 @@ NUMBERS_IMG_SOURCE = "resources/numbers.png"
 BUTTONFACES_IMG_SOURCE = "resources/button_faces.png"
 
 # Display configuration
+VISUAL = False
 CELL_SIZE = 32
 GAME_FPS = 60
 

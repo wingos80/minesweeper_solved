@@ -117,6 +117,70 @@ class GIGAAI:
 
         return play_pos, flag_pos_list
         
+    def solve_reduced(self, board):
+        tiles = board.digg_map.flatten()
+        unexplored_mask = (tiles == UNEXPLORED_CELL)
+        flag_mask = (tiles == FLAG_CELL)
+        explored_mask = np.logical_not(unexplored_mask)
+
+        A_e = self.A_full[explored_mask] # Shape: explored x full
+        b_e = tiles[explored_mask] - A_e[:,flag_mask].sum(axis=1) # Shape: explored, second term handles flag impact on RHS
+        A_ef = A_e[np.logical_not(flag_mask[explored_mask])] # Shape: explored x (unexplored & not flagged)
+        b_ef = b_e[np.logical_not(flag_mask[explored_mask])] # Shape: explored & not flagged
+        
+        A_ef_u = A_ef[:,unexplored_mask] # Shape: explored x unexplored
+        informed_mask = np.ones_like(unexplored_mask)
+        informed_mask[unexplored_mask] = (np.diff(A_ef_u.tocsc().indptr) != 0) # Shape: full, true only for tiles neighbouring (incl. diagonally) to an explored cell 
+        A_ef_ui = A_ef[:,unexplored_mask & informed_mask] # Shape: explored x (unexplored & informed)
+
+        # Handle fully determined cases where number of flags & explored numbers adds up perfectly
+        zero_known_mask = np.zeros_like(explored_mask)
+        zero_known_mask[explored_mask & np.logical_not(flag_mask)] = (b_ef == 0) # Shape: explored, false for equations with 0 RHS after flags were brought to RHS
+        A_zero = A_ef_ui[b_ef==0] # Shape: (explored & nonzero RHS) x (unexplored & informed)
+        zero_unknown_mask = np.zeros_like(unexplored_mask)
+        zero_unknown_mask[unexplored_mask & informed_mask] = (np.diff(A_zero.tocsc().indptr) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb)
+        b = b_ef[b_ef!=0] # Retain only equations for nonzero RHS
+
+        self.x_full = np.empty_like(tiles, dtype=float)
+        self.x_full[:] = np.nan
+        self.x_full[zero_unknown_mask] = 0 # Set tiles that were fully determined to be zero to exactly zero
+        if not np.any(zero_unknown_mask): # Solve tiles only if there is no fully determined tile that can be picked
+            unknown_mask = unexplored_mask & informed_mask & np.logical_not(zero_unknown_mask) # Shape: full, true only for true unknowns (unexplored, informed and not already fully determined)
+            known_mask = explored_mask & np.logical_not(zero_known_mask) & np.logical_not(flag_mask)
+            A = self.A_full[known_mask]
+            A = A[:,unknown_mask] # Shape: known x unknown = (explored & nonzero RHS) x (unexplored & informed & fully determined nonzero)
+            
+            # Solve LSQR
+            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False)[0]
+            
+            # Solve OPT
+            # n_undiscovered = np.count_nonzero(board.digg_map == UNEXPLORED_CELL)
+            # n_flagged = np.count_nonzero(board.digg_map == )
+            # x0 = 0.5 * np.ones(A.shape[1])
+            # self.x_full[unknown_mask] = opt.least_squares(lambda x: A@x - b, 0.5*np.ones(np.count_nonzero(unknown_mask)), bounds=(0,1), max_nfev=100).x
+
+            
+            # print(f"A:\n {A.toarray()}")
+            # print(f"x:\n {self.x_full[unknown_mask]}")
+            # print(f"b_ef:\n {b}")
+            # print(f"b:\n {b}")
+        
+        play_idx = np.nanargmin(self.x_full)
+        play_pos = self.get_pos(board, play_idx)
+        # print(f'play_idx: {play_idx}, pos: {play_pos}')
+        # print(self.x_full)
+
+        flag_pos_list = []
+        for flag_idx in np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
+            flag_pos_list.append(self.get_pos(board, flag_idx))
+
+        # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
+        # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
+        return play_pos, flag_pos_list
+
+
+                
+
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
@@ -130,8 +194,6 @@ class GIGAAI:
         return col, row
 
     def play_one_move(self, board):
-        A, b, known_mask, unknown_mask = self.linear_problem(board)
-
         # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map < 0) == MINES:
             return None, None
@@ -141,8 +203,10 @@ class GIGAAI:
             return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1])), []
         
         with np.printoptions(precision=2, suppress=True):
+            # A, b, known_mask, unknown_mask = self.linear_problem(board)
             # play_pos, flag_pos_list = self.solve_linear_problem(board, A, b, known_mask, unknown_mask)
-            play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, known_mask, unknown_mask)
+            # play_pos, flag_pos_list = self.solve_constrained_problem(board, A, b, known_mask, unknown_mask)
+            play_pos, flag_pos_list = self.solve_reduced(board)
             # print(f"PLAY\n LSQR: {play_pos}\n Opt: {play_pos2}")
             # print(f"FLAG\n LSQR: {flag_pos_list}\n Opt: {flag_pos_list2}")
 
@@ -325,7 +389,7 @@ class AI:
             prev_map = self.p_map.copy()
             # print(delta)
 
-        print('finished itearting probability map')
+        print('finished iterting probability map')
 
     def compute_naive_map(self):
         """
