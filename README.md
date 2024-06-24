@@ -37,7 +37,11 @@ The project has been divided into several modules for better organization:
 
 ## Contact
 
-For any questions or comments, feel free to contact me:
+For any questions or comments, feel to contact the following email for the python implementation of minesweeper:
 
 - Email: seastanmora@gmail.com
 
+And the following emails for the solver implementation:
+
+- elias@boegel.nl
+- wingyc80@gmail.com
