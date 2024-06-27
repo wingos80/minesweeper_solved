@@ -18,13 +18,6 @@ The solver creates a system of equations for the set of revealed numbers, with t
 4. Run the game: `python main.py`
   1. Follow the printed controls to use the solver.
 
-## Technologies Used
-
-- Python
-- Pygame
-- NumPy
-- Scipy
-
 ## Project Structure
 
 The project has been divided into several modules for better organization:
@@ -33,13 +26,14 @@ The project has been divided into several modules for better organization:
 - `board.py`: Contains the game logic and board representation.
 - `msdraw.py`: Contains functions for drawing and visual representation.
 - `msgui.py`: Contains elements of the user interface, such as counters and the smiling button.
+- `solver.py`: Contains the solver class `GIGAAI`.
 - `conf.py`: Configuration file.
 
 ## Contact
 
-For any questions or comments, feel to contact the following email for the python implementation of minesweeper:
+For any questions or comments, feel to contact the following email for the Python implementation of Minesweeper:
 
-- Email: seastanmora@gmail.com
+- seastanmora@gmail.com
 
 And the following emails for the solver implementation:
 
