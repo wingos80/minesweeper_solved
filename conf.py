@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib as mpl
 
+# Toggling Monte Carlo
+MC = 0
+
 # Gameplay configuration
-BOARD_SIZE = (25, 25)
-MINE_FRACTION = 0.15
+BOARD_SIZE = (15, 15)
+MINE_FRACTION = 0.20
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
@@ -24,7 +27,7 @@ NUMBERS_IMG_SOURCE = "resources/numbers.png"
 BUTTONFACES_IMG_SOURCE = "resources/button_faces.png"
 
 # Display configuration
-VISUAL = False
+VISUAL = True
 CELL_SIZE = 32
 GAME_FPS = 60
 

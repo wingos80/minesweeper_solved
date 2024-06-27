@@ -332,6 +332,7 @@ class App:
 
                     # Update flag display value
                     self.flags_display.set_value(self.board.mines_remaining())
+                    self.play_ai(act=False)
 
             # Event for when the player clicked to digg a place
             if event.type == pg.MOUSEBUTTONUP:
@@ -342,6 +343,7 @@ class App:
                     if not self.board.digg(self.cell_pos(event.pos)):
                         self.end_game()
                         continue
+                    self.play_ai(act=False)
 
                     self.on_success_dig()
 
@@ -354,8 +356,9 @@ class App:
                     if not self.board.chord(self.cell_pos(event.pos)):
                         self.end_game()
                         continue
-
+                    self.play_ai(act=False)
                     self.on_success_dig()
+
                 
                 
                 # print(self.solver.p_map.T)
@@ -500,9 +503,11 @@ class App:
 
         while True:
             self.check_events()
-            if self.visual: self.render()
-            print(f"Uncovered/Total: {np.count_nonzero(np.logical_not(self.board.digg_map == -1))/(BOARD_SIZE[0]*BOARD_SIZE[1])*100:.2f} %")
-            if self.won: print("Game won!")
+            if self.visual: 
+                self.render()
+                # print(f"Uncovered/Total: {np.count_nonzero(np.logical_not(self.board.digg_map == -1))/(BOARD_SIZE[0]*BOARD_SIZE[1])*100:.2f} %")
+            
+            # if self.won:
             self.check_auto_restart()
             self.clock.tick(GAME_FPS)
 
@@ -513,6 +518,11 @@ def main():
 
 
 if __name__ == '__main__':
-    SEED = None
-    main()
-    
+    if MC:
+        VISUAL = False
+        SEED = np.arange(0, 1000)
+        for seed in SEED:
+            main()
+    else:
+        SEED = None
+        main()
