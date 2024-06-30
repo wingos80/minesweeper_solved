@@ -1,6 +1,7 @@
 import sys
 import pygame as pg
 import numpy as np
+import time
 
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
@@ -15,8 +16,6 @@ class App:
     the board """
 
     def __init__(self, board_size, mines, seed=None, random_place=True, visual=True):
-        # Initialize pygame
-        pg.init()
 
         # Initialize seed
         self.seed = seed
@@ -27,16 +26,18 @@ class App:
         # too large and the digg recursion exceeds its normal depth limit
         sys.setrecursionlimit(2000)
 
-        self.screen_size = (
-            CELL_SIZE * board_size[0] + 25,
-            CELL_SIZE * board_size[1] + 64
-        )
 
         self.offset = 13, 56
         self.board = Board(board_size, mines, seed=self.seed, random_place=random_place)
         self.solver = GIGAAI(self.board, seed=self.seed)
 
         if visual:
+            self.screen_size = (
+                CELL_SIZE * board_size[0] + 25,
+                CELL_SIZE * board_size[1] + 64
+            )
+            # Initialize pygame
+            pg.init()
             self.window = pg.display.set_mode(self.screen_size)
             pg.display.set_caption("Mine Sweeper")
 
@@ -49,9 +50,9 @@ class App:
             )
             self.background = self.render_background()
             self.cell_symbols = self.render_symbols()
+            self.clock = pg.time.Clock()
 
 
-        self.clock = pg.time.Clock()
         self.start_time = None
 
         self.left_click = False
@@ -61,6 +62,10 @@ class App:
         # To mark if the player is able to continue interacting with the board
         self.alive = True
         self.won = False
+
+        # monte carlo info
+        self.info = {'won': None,
+                     'time': None}
 
     def render_background(self):
         """ Generates a pygame surface representing the background """
@@ -198,12 +203,12 @@ class App:
         if board_size == oldboard_size:
             return
 
-        self.screen_size = (
-            CELL_SIZE * board_size[0] + 25,
-            CELL_SIZE * board_size[1] + 64
-        )
 
         if self.visual:
+            self.screen_size = (
+                CELL_SIZE * board_size[0] + 25,
+                CELL_SIZE * board_size[1] + 64
+            )
             self.clock_display.set_value(0)
             self.smile_button.pos = self.screen_size[0] // 2 - 13, 16
 
@@ -228,14 +233,7 @@ class App:
             if act:
 
                 if not self.board.digg(play_pos): 
-                    # # first place flags on all unrevealed cells
-                    # digg_map = self.board.digg_map
-                    # self.board.digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
                     self.end_game()
-                    # if self.auto_restart:
-                    #     self.render()
-                    #     pg.time.wait(1000)
-                    #     self.restart()
                 
                 for flag_pos in flag_pos_list:
                     self.board.place_flag(flag_pos)
@@ -243,13 +241,6 @@ class App:
                 self.on_success_dig()
                 
         _, _ = self.solver.play_one_move(self.board)
-        # else:
-        #     if act:
-        #         self.won = True
-        #         indices_undiscovered = (self.board.digg_map<0).nonzero()
-        #         indices_undiscovered_tuples = list(zip(*indices_undiscovered))
-        #         for pos in indices_undiscovered_tuples:
-        #             if self.board.digg_map[pos[0], pos[1]] != -2: self.board.place_flag(pos)
     
     def check_events(self):
         """ Method to manage player events:
@@ -266,103 +257,102 @@ class App:
          
         if self.auto and self.alive: self.play_ai(act=self.act)
 
-        self.left_click, _, self.right_click = pg.mouse.get_pressed()
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
-
-            if event.type == pg.KEYDOWN:
-                # Exit the game and shutdown the program
-                if event.key == pg.K_ESCAPE:
+        if self.visual: 
+            self.left_click, _, self.right_click = pg.mouse.get_pressed()
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
                     pg.quit()
                     sys.exit()
 
-                # Reset the current game
-                if event.key == pg.K_r:
-                    self.restart()
+                if event.type == pg.KEYDOWN:
+                    # Exit the game and shutdown the program
+                    if event.key == pg.K_ESCAPE:
+                        pg.quit()
+                        sys.exit()
 
-                # Starts a new game with beginner difficulty
-                if event.key == pg.K_1:
-                    self.restart((9, 9), 10)
+                    # Reset the current game
+                    if event.key == pg.K_r:
+                        self.restart()
 
-                # Starts a new game with intermediate difficulty
-                if event.key == pg.K_2:
-                    self.restart((16, 16), 40)
+                    # Starts a new game with beginner difficulty
+                    if event.key == pg.K_1:
+                        self.restart((9, 9), 10)
 
-                # Starts a new game with expert difficulty
-                if event.key == pg.K_3:
-                    self.restart((30, 16), 99)
-                
-                # Toggles AI actions
-                if event.key == pg.K_b:
-                    if self.aid:
-                        self.aid = False
-                    else:
-                        self.aid = True
-                    print(f"Solver action: {self.aid}")
+                    # Starts a new game with intermediate difficulty
+                    if event.key == pg.K_2:
+                        self.restart((16, 16), 40)
 
-                # Toggles auto restart
-                if event.key == pg.K_BACKSPACE:
-                    if self.auto_restart: 
-                        self.auto_restart = False
-                    else:
-                        self.auto_restart = True
-                    print(f"Auto restart: {self.auto_restart}")
-
-                # Toggles solver
-                if event.key == pg.K_RETURN:
-                    if self.auto: 
-                        self.auto = False
-                    else:
-                        self.auto = True
-                    print(f"Auto solve: {self.auto}")
-
-                # Plays one move with the solver
-                if event.key == pg.K_a and self.alive:
-                    self.play_ai(act=True)
-            # If the player is not alive, skip.
-            if not self.alive or self.won:
-                continue
-
-            # Event for when the player clicked to place a flag
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if event.button == RIGHT and not self.left_click:
-                    self.board.place_flag(self.cell_pos(event.pos))
-
-                    # Update flag display value
-                    self.flags_display.set_value(self.board.mines_remaining())
-                    self.play_ai(act=False)
-
-            # Event for when the player clicked to digg a place
-            if event.type == pg.MOUSEBUTTONUP:
+                    # Starts a new game with expert difficulty
+                    if event.key == pg.K_3:
+                        self.restart((30, 16), 99)
                     
-                # If the chord technique is not active, digg a single cell
-                if event.button == LEFT and not self.chord_mode:
-                    # Digg the clicked place
-                    if not self.board.digg(self.cell_pos(event.pos)):
-                        self.end_game()
-                        continue
-                    self.play_ai(act=False)
+                    # Toggles AI actions
+                    if event.key == pg.K_b:
+                        if self.aid:
+                            self.aid = False
+                        else:
+                            self.aid = True
+                        print(f"Solver action: {self.aid}")
 
-                    self.on_success_dig()
+                    # Toggles auto restart
+                    if event.key == pg.K_BACKSPACE:
+                        if self.auto_restart: 
+                            self.auto_restart = False
+                        else:
+                            self.auto_restart = True
+                        print(f"Auto restart: {self.auto_restart}")
 
-                # If the chord technique is active, digg all the
-                # surrounding cells
-                if (event.button == LEFT and self.right_click)\
-                        or (event.button == RIGHT and self.left_click):
-                    # If the chording fails, means that the player wrong placed
-                    # a flag and the chording technique digged a mine.
-                    if not self.board.chord(self.cell_pos(event.pos)):
-                        self.end_game()
-                        continue
-                    self.play_ai(act=False)
-                    self.on_success_dig()
+                    # Toggles solver
+                    if event.key == pg.K_RETURN:
+                        if self.auto: 
+                            self.auto = False
+                        else:
+                            self.auto = True
+                        print(f"Auto solve: {self.auto}")
 
-                
-                
-                # print(self.solver.p_map.T)
-                # print(self.board.digg_map.T)
+                    # Plays one move with the solver
+                    if event.key == pg.K_a and self.alive:
+                        self.play_ai(act=True)
+                # If the player is not alive, skip.
+                if not self.alive or self.won:
+                    continue
+
+                # Event for when the player clicked to place a flag
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == RIGHT and not self.left_click:
+                        self.board.place_flag(self.cell_pos(event.pos))
+
+                        # Update flag display value
+                        self.flags_display.set_value(self.board.mines_remaining())
+                        self.play_ai(act=False)
+
+                # Event for when the player clicked to digg a place
+                if event.type == pg.MOUSEBUTTONUP:
+                        
+                    # If the chord technique is not active, digg a single cell
+                    if event.button == LEFT and not self.chord_mode:
+                        # Digg the clicked place
+                        if not self.board.digg(self.cell_pos(event.pos)):
+                            self.end_game()
+                            continue
+                        self.play_ai(act=False)
+
+                        self.on_success_dig()
+
+                    # If the chord technique is active, digg all the
+                    # surrounding cells
+                    if (event.button == LEFT and self.right_click)\
+                            or (event.button == RIGHT and self.left_click):
+                        # If the chording fails, means that the player wrong placed
+                        # a flag and the chording technique digged a mine.
+                        if not self.board.chord(self.cell_pos(event.pos)):
+                            self.end_game()
+                            continue
+                        self.play_ai(act=False)
+                        self.on_success_dig()
+                   
+                    # print(self.solver.p_map.T)
+                    # print(self.board.digg_map.T)
         if self.won:
             # Places a flag in all unexplored cells
             digg_map = self.board.digg_map
@@ -462,21 +452,30 @@ class App:
 
     def render(self):
         """ Contains render methods to display the game """
-        self.window.blit(self.background, (0, 0))
+        if self.visual: 
+            self.window.blit(self.background, (0, 0))
 
-        self.render_field()
-        self.render_click_effects()
-        self.render_displays()
+            self.render_field()
+            self.render_click_effects()
+            self.render_displays()
 
-        self.smile_button.draw(self.window)
+            self.smile_button.draw(self.window)
 
-        pg.display.flip()
+            pg.display.flip()
 
     def get_time(self):
         return pg.time.get_ticks() * 0.001
 
     def check_auto_restart(self):
         """ Checks if game should automatically restart"""
+        if MC:
+            if self.alive and self.won:
+                self.info['won'] = True
+                self.stop = True
+            elif not self.alive:
+                self.info['won'] = False
+                self.stop = True
+                
         if self.auto_restart:
             if not self.alive or self.won:
                 pg.time.wait(1000)
@@ -499,30 +498,61 @@ class App:
         """ Starts the main loop of the game """
         self.auto, self.auto_restart, self.aid, self.act = auto, auto_restart, aid, act
 
-        self.print_instructions()
+        if self.visual: self.print_instructions()
 
-        while True:
+        toc = time.time()
+
+        self.stop = False
+
+        while not self.stop:
             self.check_events()
-            if self.visual: 
-                self.render()
-                # print(f"Uncovered/Total: {np.count_nonzero(np.logical_not(self.board.digg_map == -1))/(BOARD_SIZE[0]*BOARD_SIZE[1])*100:.2f} %")
-            
-            # if self.won:
+
+            self.render()
+
             self.check_auto_restart()
-            self.clock.tick(GAME_FPS)
+
+            if self.visual: self.clock.tick(GAME_FPS)
+            
+
+        tic = time.time()
+
+        if MC:
+            self.info['time'] = tic - toc
+            print(self.info)
 
 
 def main():
     app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
-    app.start(auto=not VISUAL, auto_restart=not VISUAL, aid=1, act=1)
+    app.start(auto=True, auto_restart=not VISUAL, aid=1, act=1)
+
+    return app.info
+
+def run_MC():
+    global SEED, VISUAL
+
+    VISUAL = False
+    MC_info = {}
+
+    SEEDS = np.arange(0, MC_n)
+    for seed in SEEDS:
+        SEED = seed
+        print(f"SEED: {SEED}")
+        info = main()
+        
+        keys = list(info.keys())
+        for key in keys:
+            if key not in MC_info:
+                MC_info[key] = [info[key]]
+            MC_info[key].append(info[key])
+
+    print(MC_info)
+
+    return MC_info
 
 
 if __name__ == '__main__':
     if MC:
-        VISUAL = False
-        SEED = np.arange(0, 1000)
-        for seed in SEED:
-            main()
+        MC_info = run_MC()
     else:
-        SEED = None
-        main()
+        SEED = 0
+        _ = main()

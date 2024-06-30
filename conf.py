@@ -2,11 +2,12 @@ import numpy as np
 import matplotlib as mpl
 
 # Toggling Monte Carlo
-MC = 0
+MC = 1
+MC_n = 10 # number of simulations
 
 # Gameplay configuration
 BOARD_SIZE = (15, 15)
-MINE_FRACTION = 0.20
+MINE_FRACTION = 0.17
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants

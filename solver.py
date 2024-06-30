@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 
 class GIGAAI:
     def __init__(self, board, seed=None):
-        if seed:
+        if seed is not None:
             np.random.seed(seed)
             
         self.A_full = self.make_matrix_sparse(board)

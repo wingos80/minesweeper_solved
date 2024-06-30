@@ -7,8 +7,8 @@ class Board:
     """ The game base logic """
     
     def __init__(self, size, mines, seed=None, random_place=True):
-        if seed:
-            random.seed(seed)
+        if seed is not None:
+            np.random.seed(seed)
         
         # toggle place mines randomly
         self.random_place = random_place
@@ -47,8 +47,8 @@ class Board:
 
         if self.random_place:
             while mines_placed < self.mines:
-                x = random.randint(0, width-1)
-                y = random.randint(0, height-1)
+                x = np.random.randint(0, width-1)
+                y = np.random.randint(0, height-1)
 
                 if not self.mine_map[x, y] and not (x, y) in excluded_pos:
                     self.mine_map[x, y] = 1
