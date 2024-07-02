@@ -254,9 +254,7 @@ class App:
             If the player press right click, place/remove a flag on a cell.
 
          """
-         
-        if self.auto and self.alive: self.play_ai(act=self.act)
-
+        
         if self.visual: 
             self.left_click, _, self.right_click = pg.mouse.get_pressed()
             for event in pg.event.get():
@@ -273,6 +271,7 @@ class App:
                     # Reset the current game
                     if event.key == pg.K_r:
                         self.restart()
+                        print("Game restarted")
 
                     # Starts a new game with beginner difficulty
                     if event.key == pg.K_1:
@@ -287,12 +286,12 @@ class App:
                         self.restart((30, 16), 99)
                     
                     # Toggles AI actions
-                    if event.key == pg.K_b:
-                        if self.aid:
-                            self.aid = False
+                    if event.key == pg.K_h:
+                        if self.hint:
+                            self.hint = False
                         else:
-                            self.aid = True
-                        print(f"Solver action: {self.aid}")
+                            self.hint = True
+                        print(f"Solver hint: {self.hint}")
 
                     # Toggles auto restart
                     if event.key == pg.K_BACKSPACE:
@@ -313,6 +312,8 @@ class App:
                     # Plays one move with the solver
                     if event.key == pg.K_a and self.alive:
                         self.play_ai(act=True)
+                        print("Solver played one move")
+
                 # If the player is not alive, skip.
                 if not self.alive or self.won:
                     continue
@@ -353,8 +354,12 @@ class App:
                    
                     # print(self.solver.p_map.T)
                     # print(self.board.digg_map.T)
+        
+        # Auto play
+        if self.auto and self.alive: self.play_ai(act=True)
+
+        # Places a flag in all unexplored cells if won
         if self.won:
-            # Places a flag in all unexplored cells
             digg_map = self.board.digg_map
             digg_map[digg_map == UNEXPLORED_CELL] = FLAG_CELL
 
@@ -379,7 +384,7 @@ class App:
         # print(self.solver.x_full)
         for i in range(w):
             for j in range(h):
-                if board.digg_map[i, j] == UNEXPLORED_CELL and self.aid:
+                if board.digg_map[i, j] == UNEXPLORED_CELL and self.hint:
                     surf = self.render_likelihood(self.solver.x_full[i*h + j])
                 else:
                     surf = self.cell_symbols[board.digg_map[i, j]]
@@ -488,15 +493,16 @@ class App:
         print('\n----------------------')
         print('Controls:')
         print('    ESC      : Exit')
-        print('    r        : Restart')
         print('    ENTER    : Toggle solver')
         print('    BACKSPACE: Toggle auto restart')
         print('    A        : Play one move with solver (only if solver is inactive)')
+        print('    H        : Toggle solver hints')
+        print('    R        : Restart')
         print('----------------------\n')
 
-    def start(self, auto, auto_restart, aid, act):
+    def start(self, auto, auto_restart, hint):
         """ Starts the main loop of the game """
-        self.auto, self.auto_restart, self.aid, self.act = auto, auto_restart, aid, act
+        self.auto, self.auto_restart, self.hint = auto, auto_restart, hint
 
         if self.visual: self.print_instructions()
 
@@ -523,7 +529,7 @@ class App:
 
 def main():
     app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
-    app.start(auto=True, auto_restart=not VISUAL, aid=1, act=1)
+    app.start(auto=True, auto_restart=not VISUAL, hint=VISUAL)
 
     return app.info
 
@@ -551,8 +557,10 @@ def run_MC():
 
 
 if __name__ == '__main__':
+    print("Launching game\n")
     if MC:
+        print(f"Running {MC_n} Monte Carlo simulations\n")
         MC_info = run_MC()
     else:
-        SEED = 0
+        SEED = None
         _ = main()
