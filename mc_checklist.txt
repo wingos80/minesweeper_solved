@@ -1,0 +1,5 @@
+get success rate versus size of map and density of bombs for the following algos:
+
+- whatever solver we have now
+- abs() before using argmin() to select next move
+- solver with full rule

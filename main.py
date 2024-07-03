@@ -529,7 +529,7 @@ class App:
 
 def main():
     app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
-    app.start(auto=True, auto_restart=not VISUAL, hint=VISUAL)
+    app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
 
@@ -562,5 +562,4 @@ if __name__ == '__main__':
         print(f"Running {MC_n} Monte Carlo simulations\n")
         MC_info = run_MC()
     else:
-        SEED = None
         _ = main()

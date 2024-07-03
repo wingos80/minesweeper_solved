@@ -1,4 +1,5 @@
-- benchmarker/monte carlo run setup (without GUI, run X times, show run statistics e.g. underdetermined-ness of systems, runtime, success rates...)
+- add full-rule
+- try rerunning lsq with clipped x vector?
 - add logic to select distant tiles if neighbouring tiles are uncertain
 - make gui for next move guess
-- get constrained solve working
+
