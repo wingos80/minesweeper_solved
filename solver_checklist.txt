@@ -1,7 +1,0 @@
-- add full-rule
-- add total bomb eq to sys of eq ones there are no uneighboured cells
-- maybe estimate lower n upper bound for possible no of bombs and see if solution is within those bounds
-- try rerunning lsq with clipped x vector? DONE
-- add logic to select distant tiles if neighbouring tiles are uncertain
-- make gui for next move guess
-
