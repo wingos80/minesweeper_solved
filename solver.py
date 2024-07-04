@@ -31,6 +31,7 @@ from conf import *
 from utils.functions import *
 import matplotlib.pyplot as plt
 
+np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)},suppress=True)
 class GIGAAI:
     def __init__(self, board, seed=None):
         if seed is not None:
@@ -150,9 +151,19 @@ class GIGAAI:
             A = self.A_full[known_mask]
             A = A[:,unknown_mask] # Shape: known x unknown = (explored & nonzero RHS) x (unexplored & informed & fully determined nonzero)
             
+            self.A_reduced = A
+            unexplored_cells = (tiles < 0)
+            naive_estimate = MINES/np.sum(unexplored_cells)
+            x0 = naive_estimate*np.ones(np.sum(unknown_mask))
             # Solve LSQR
-            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False)[0]
-            
+            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False, x0=x0)[0]
+
+            itr_max = 100
+            for itr in range(100):
+                self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False, x0=np.clip(self.x_full[unknown_mask],0,1))[0]
+                violated_dofs = np.any(self.x_full[unknown_mask]>1) | np.any(self.x_full[unknown_mask]<0)
+                if itr > itr_max or not violated_dofs: break
+                
             # Solve OPT
             # n_undiscovered = np.count_nonzero(board.digg_map == UNEXPLORED_CELL)
             # n_flagged = np.count_nonzero(board.digg_map == )
@@ -177,10 +188,6 @@ class GIGAAI:
         # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
         # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
         return play_pos, flag_pos_list
-
-
-                
-
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
@@ -210,6 +217,9 @@ class GIGAAI:
             # print(f"PLAY\n LSQR: {play_pos}\n Opt: {play_pos2}")
             # print(f"FLAG\n LSQR: {flag_pos_list}\n Opt: {flag_pos_list2}")
 
+        # print(f'A matrix:\n{self.A_reduced.toarray()}')
+        # print(f'x_full unreshaped:\n{self.x_full}')
+        # print(f'x_full reshaped:\n{self.x_full.reshape(BOARD_SIZE[0], BOARD_SIZE[1]).T}')
         return play_pos, flag_pos_list
     
 

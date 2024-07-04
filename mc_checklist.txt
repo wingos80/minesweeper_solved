@@ -1,5 +1,12 @@
-get success rate versus size of map and density of bombs for the following algos:
+BENCHMARK- 15 cases (3 maps by 5 densities), 100 runs each:
 
+SEEDS = np.arange(0,100)
+BOARD_SIZE = [(8,8), (16,16), (64,64)]
+BOMB_DENSITY = [0.1, 0.15, 0.2, 0.25, 0.3]
+metrics = success_rate
+
+run the benchmark for
 - whatever solver we have now
 - abs() before using argmin() to select next move
 - solver with full rule
+

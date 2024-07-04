@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib as mpl
 
 # Set game seed
-SEED = 3
+SEED = 1
 
 # Toggling Monte Carlo
 MC = 0
