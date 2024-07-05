@@ -30,6 +30,7 @@ import scipy.sparse.linalg as spla
 from conf import *
 from utils.functions import *
 import matplotlib.pyplot as plt
+import time
 
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)},suppress=True)
 class GIGAAI:
@@ -156,13 +157,15 @@ class GIGAAI:
             naive_estimate = MINES/np.sum(unexplored_cells)
             x0 = naive_estimate*np.ones(np.sum(unknown_mask))
             # Solve LSQR
-            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False, x0=x0)[0]
+            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False,x0=x0)[0]
 
-            itr_max = 100
-            for itr in range(100):
+            itr_max = 20
+            for itr in range(itr_max):
                 self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False, x0=np.clip(self.x_full[unknown_mask],0,1))[0]
                 violated_dofs = np.any(self.x_full[unknown_mask]>1) | np.any(self.x_full[unknown_mask]<0)
-                if itr > itr_max or not violated_dofs: break
+                if itr == itr_max-1 or not violated_dofs: 
+                    # print(f'Converged after {itr+1x} iterations')
+                    break
                 
             # Solve OPT
             # n_undiscovered = np.count_nonzero(board.digg_map == UNEXPLORED_CELL)
@@ -175,8 +178,12 @@ class GIGAAI:
             # print(f"x:\n {self.x_full[unknown_mask]}")
             # print(f"b_ef:\n {b}")
             # print(f"b:\n {b}")
-        
-        play_idx = np.nanargmin(self.x_full)
+        try :
+            play_idx = np.nanargmin(self.x_full)
+        except:
+            # print('no solution found')
+            return None, []
+        # play_idx = np.nanargmin(self.x_full)
         play_pos = self.get_pos(board, play_idx)
         # print(f'play_idx: {play_idx}, pos: {play_pos}')
         # print(self.x_full)
@@ -204,6 +211,8 @@ class GIGAAI:
         # If all uncovered tiles are mines, game is over, return None
         if np.sum(board.digg_map < 0) == MINES:
             return None, None
+        
+        # 
          
         # If all tiles are uncovered, choose random starting tile
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
@@ -220,6 +229,8 @@ class GIGAAI:
         # print(f'A matrix:\n{self.A_reduced.toarray()}')
         # print(f'x_full unreshaped:\n{self.x_full}')
         # print(f'x_full reshaped:\n{self.x_full.reshape(BOARD_SIZE[0], BOARD_SIZE[1]).T}')
+        # print(f'play_pos: {play_pos}')
+        # print(f'flag_pos_list: {flag_pos_list}')
         return play_pos, flag_pos_list
     
 

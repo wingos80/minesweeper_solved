@@ -483,7 +483,7 @@ class App:
                 
         if self.auto_restart:
             if not self.alive or self.won:
-                pg.time.wait(1000)
+                if not VISUAL: pg.time.wait(1000)
                 self.restart()
             else:
                 pass
@@ -499,12 +499,12 @@ class App:
         print('    H        : Toggle solver hints')
         print('    R        : Restart')
         print('----------------------\n')
+        print(f'Auto: {self.auto}\nAuto restart: {self.auto_restart}\nHint: {self.hint}')
 
     def start(self, auto, auto_restart, hint):
         """ Starts the main loop of the game """
         self.auto, self.auto_restart, self.hint = auto, auto_restart, hint
-
-        if self.visual: self.print_instructions()
+        if self.visual and not MC: self.print_instructions()
 
         toc = time.time()
 
@@ -528,6 +528,7 @@ class App:
 
 
 def main():
+    if VISUAL: print(f'\nUsing seed: {SEED}\n')
     app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
@@ -542,7 +543,6 @@ def run_MC():
     SEEDS = np.arange(0, MC_n)
     for seed in SEEDS:
         SEED = seed
-        print(f"SEED: {SEED}")
         info = main()
         
         keys = list(info.keys())

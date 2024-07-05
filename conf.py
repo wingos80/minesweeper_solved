@@ -2,14 +2,13 @@ import numpy as np
 import matplotlib as mpl
 
 # Set game seed
-SEED = 1
-
+SEED = 14
 # Toggling Monte Carlo
-MC = 0
-MC_n = 10 # number of simulations
+MC = 1
+MC_n = 40 # number of simulations
 
 # Gameplay configuration
-BOARD_SIZE = (8, 8)
+BOARD_SIZE = (16, 16)
 MINE_FRACTION = 0.25
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
