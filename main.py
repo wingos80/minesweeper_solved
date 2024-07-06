@@ -2,6 +2,7 @@ import sys
 import pygame as pg
 import numpy as np
 import time
+import argparse
 
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
@@ -611,8 +612,14 @@ def run_benchmark():
 
 if __name__ == '__main__':
     print("Launching game\n")
+    parser = argparse.ArgumentParser(description='Runs various MAPF algorithms')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='The seed for the game (default: None)')
+    args = parser.parse_args()
+    
     if BENCHMARK:
         print(f"Running {BENCHMARK_n} tests\n")
         BENCHMARK_results = run_benchmark()
     else:
+        SEED = SEED if args.seed is None else args.seed
         _ = main()
