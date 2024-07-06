@@ -241,6 +241,9 @@ class App:
                     self.board.place_flag(flag_pos)
                 
                 self.on_success_dig()
+        elif play_pos == None:
+            # decalre we lost if solver does not know what to do
+            self.end_game()
                 
         _, _ = self.solver.play_one_move(self.board)
     
@@ -287,7 +290,7 @@ class App:
                     if event.key == pg.K_3:
                         self.restart((30, 16), 99)
                     
-                    # Toggles AI actions
+                    # Toggles AI hints
                     if event.key == pg.K_h:
                         if self.hint:
                             self.hint = False
@@ -566,32 +569,42 @@ def run_benchmark():
                 BENCHMARK_info[key] = [info[key]]
             BENCHMARK_info[key].append(info[key])
     tic = time.time() - tic
+
     
-    print('\n\n')
-    print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark completed{COLOR.END} (time elapsed: {tic:.3f})')
-    
+    won_seeds = np.array(BENCHMARK_info['won']) == True
+
     win_ratio = sum(BENCHMARK_info['won']) / BENCHMARK_n
-    unexplored_ratio = np.mean(BENCHMARK_info['unexplored_cells_ratio'])
-    avg_runtime = np.mean(BENCHMARK_info['time'])
+
+    times           = BENCHMARK_info['time']
+    avg_runtime     = np.mean(times)
+    avg_runtime_won = np.mean(np.array(times)[won_seeds])
+
+    unexplored_ratios          = BENCHMARK_info['unexplored_cells_ratio']
+    avg_unexplored_ratio       = np.mean(unexplored_ratios)
+    avg_unexplored_ratios_lost = np.mean(np.array(unexplored_ratios)[~won_seeds])
 
     BENCHMARK_results = {'win_ratio': win_ratio,
-                         'unexplored_cells_ratio': unexplored_ratio,
+                         'unexplored_cells_ratio': unexplored_ratios,
                          'avg_runtime': avg_runtime,
+                         'avg_runtime_won': avg_runtime_won,
                          'info': BENCHMARK_info}
 
     print('\n\n')
-    print('---------------------------------------')
+    print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark complete{COLOR.END} (time elapsed: {tic:.3f} s)')
+    print('')
+    print('')
+    print('------------------------------------------------------------------')
     print('Benchmark settings:')
     print(f'    Num seeds    : {BENCHMARK_n}')
     print(f'    Board size   : {BOARD_SIZE[0]}x{BOARD_SIZE[1]}')
     print(f'    Mine density : {MINE_FRACTION}')
     print(f'    Mines        : {MINES}')
-    print('- - - - - - - - - - - - - - - - - - - - ')
+    print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
     print('Benchmark results:')
-    print(f'    Win ratio                  : {COLOR.BLUE}{win_ratio}{COLOR.END}')
-    print(f'    Avg runtime [s]            : {COLOR.BLUE}{avg_runtime:.3f}{COLOR.END}')
-    print(f'    Avg unexplored cells ratio : {COLOR.BLUE}{unexplored_ratio:.3f}{COLOR.END}')
-    print('---------------------------------------\n\n')
+    print(f'    Win ratio                     : {COLOR.BLUE}{win_ratio}{COLOR.END}')
+    print(f'    Avg runtime [s]               : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
+    print(f'    Avg unexplored cells ratio    : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
+    print('------------------------------------------------------------------\n\n')
 
     return BENCHMARK_results
 

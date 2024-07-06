@@ -3,24 +3,38 @@ import matplotlib as mpl
 
 """
 BENCHMARK SPECIFICATIONS:
-    15 tests (3 maps by 5 densities), 100 runs each:
 
+3 difficulties, 100 runs each:
     SEEDS        = np.arange(0,100)
-    BOARD_SIZE   = [(8,8), (16,16), (64,64)]
-    BOMB_DENSITY = [0.1, 0.15, 0.2, 0.25, 0.3]
-    metrics      = success_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements
+
+beginner difficulty:
+    BOARD_SIZE = (9, 9)
+    MINE_FRACTION = 0.12346
+    MINES = 10
+
+intermediate difficulty:
+    BOARD_SIZE = (16, 16)
+    MINE_FRACTION = 0.15625
+    MINES = 40
+
+expert difficulty:
+    BOARD_SIZE = (30, 16)
+    MINE_FRACTION = 0.20625
+    MINES = 99
+        
+metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 24
+SEED = 4
 
 # Toggling Benchmark
-BENCHMARK = 1
-BENCHMARK_n = 100 # number of simulations
+BENCHMARK = 0
+BENCHMARK_n = 1000 # number of simulations
 
 
 # Gameplay configuration
-BOARD_SIZE = (8,8)
-MINE_FRACTION = 0.15
+BOARD_SIZE = (30, 16)
+MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
