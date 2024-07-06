@@ -15,12 +15,14 @@ class App:
     interactions with the board, and methods to display the current state of
     the board """
 
-    def __init__(self, board_size, mines, seed=None, random_place=True, visual=True):
+    def __init__(self, board_size, mines, seed=None, pretty_print=True, visual=True, random_place=True):
 
         # Initialize seed
         self.seed = seed
 
         self.visual = visual
+
+        self.pretty_print = pretty_print
 
         # Increases the maximum recursion limit for cases where the map is
         # too large and the digg recursion exceeds its normal depth limit
@@ -271,7 +273,7 @@ class App:
                     # Reset the current game
                     if event.key == pg.K_r:
                         self.restart()
-                        print("Game restarted")
+                        if not self.pretty_print: print("Game restarted")
 
                     # Starts a new game with beginner difficulty
                     if event.key == pg.K_1:
@@ -291,7 +293,7 @@ class App:
                             self.hint = False
                         else:
                             self.hint = True
-                        print(f"Solver hint: {self.hint}")
+                        if not self.pretty_print: print(f"Solver hint: {self.hint}")
 
                     # Toggles auto restart
                     if event.key == pg.K_BACKSPACE:
@@ -299,7 +301,7 @@ class App:
                             self.auto_restart = False
                         else:
                             self.auto_restart = True
-                        print(f"Auto restart: {self.auto_restart}")
+                        if not self.pretty_print: print(f"Auto restart: {self.auto_restart}")
 
                     # Toggles solver
                     if event.key == pg.K_RETURN:
@@ -307,12 +309,13 @@ class App:
                             self.auto = False
                         else:
                             self.auto = True
-                        print(f"Auto solve: {self.auto}")
+                        if not self.pretty_print: print(f"Auto solve: {self.auto}")
 
                     # Plays one move with the solver
                     if event.key == pg.K_a and self.alive:
                         self.play_ai(act=True)
-                        print("Solver played one move")
+                        if not self.pretty_print: 
+                            print("Solver played one move")
 
                 # If the player is not alive, skip.
                 if not self.alive or self.won:
@@ -354,7 +357,7 @@ class App:
                    
                     # print(self.solver.p_map.T)
                     # print(self.board.digg_map.T)
-        
+
         # Auto play
         if self.auto and self.alive: self.play_ai(act=True)
 
@@ -473,7 +476,7 @@ class App:
 
     def check_auto_restart(self):
         """ Checks if game should automatically restart"""
-        if MC:
+        if BENCHMARK:
             if self.alive and self.won:
                 self.info['won'] = True
                 self.stop = True
@@ -483,14 +486,15 @@ class App:
                 
         if self.auto_restart:
             if not self.alive or self.won:
-                if not VISUAL: pg.time.wait(1000)
+                if self.visual: 
+                    pg.time.wait(1000)
                 self.restart()
             else:
                 pass
     
     def print_instructions(self):
         """ Prints the game instructions """
-        print('\n----------------------')
+        print('----------------------')
         print('Controls:')
         print('    ESC      : Exit')
         print('    ENTER    : Toggle solver')
@@ -499,12 +503,13 @@ class App:
         print('    H        : Toggle solver hints')
         print('    R        : Restart')
         print('----------------------\n')
-        print(f'Auto: {self.auto}\nAuto restart: {self.auto_restart}\nHint: {self.hint}')
+        if not self.pretty_print: 
+            print(f'Auto: {self.auto}\nAuto restart: {self.auto_restart}\nHint: {self.hint}')
 
     def start(self, auto, auto_restart, hint):
         """ Starts the main loop of the game """
         self.auto, self.auto_restart, self.hint = auto, auto_restart, hint
-        if self.visual and not MC: self.print_instructions()
+        if self.visual and not BENCHMARK: self.print_instructions()
 
         toc = time.time()
 
@@ -517,49 +522,84 @@ class App:
 
             self.check_auto_restart()
 
-            if self.visual: self.clock.tick(GAME_FPS)
+            if self.visual:
+                self.clock.tick(GAME_FPS)
+                if self.pretty_print: 
+                    auto_color = COLOR.GREEN if self.auto else COLOR.RED
+                    restart_color = COLOR.GREEN if self.auto_restart else COLOR.RED
+                    hint_color = COLOR.GREEN if self.hint else COLOR.RED
+                    print(f'Auto: {auto_color}{self.auto}{COLOR.END}, Auto restart: {restart_color}{self.auto_restart}{COLOR.END}, Hint: {hint_color}{self.hint}{COLOR.END}   ', end='\r')
             
 
         tic = time.time()
 
-        if MC:
+        if BENCHMARK:
             self.info['time'] = tic - toc
-            print(self.info)
+            unexplored_cells = np.sum(self.board.digg_map == -1)
+            unexplored_cells_ratio = unexplored_cells / (self.board.size[0] * self.board.size[1])
+            self.info['unexplored_cells_ratio'] = unexplored_cells_ratio
+            print('    ', self.info)
 
 
 def main():
-    if VISUAL: print(f'\nUsing seed: {SEED}\n')
-    app = App(BOARD_SIZE, MINES, seed=SEED, random_place=True, visual=VISUAL)
+    print(f'Using seed: {SEED}')
+    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
 
-def run_MC():
+def run_benchmark():
     global SEED, VISUAL
 
     VISUAL = False
-    MC_info = {}
+    BENCHMARK_info = {}
 
-    SEEDS = np.arange(0, MC_n)
+    SEEDS = np.arange(0, BENCHMARK_n)
+    tic = time.time()
     for seed in SEEDS:
         SEED = seed
         info = main()
         
         keys = list(info.keys())
         for key in keys:
-            if key not in MC_info:
-                MC_info[key] = [info[key]]
-            MC_info[key].append(info[key])
+            if key not in BENCHMARK_info:
+                BENCHMARK_info[key] = [info[key]]
+            BENCHMARK_info[key].append(info[key])
+    tic = time.time() - tic
+    
+    print('\n\n')
+    print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark completed{COLOR.END} (time elapsed: {tic:.3f})')
+    
+    win_ratio = sum(BENCHMARK_info['won']) / BENCHMARK_n
+    unexplored_ratio = np.mean(BENCHMARK_info['unexplored_cells_ratio'])
+    avg_runtime = np.mean(BENCHMARK_info['time'])
 
-    print(MC_info)
+    BENCHMARK_results = {'win_ratio': win_ratio,
+                         'unexplored_cells_ratio': unexplored_ratio,
+                         'avg_runtime': avg_runtime,
+                         'info': BENCHMARK_info}
 
-    return MC_info
+    print('\n\n')
+    print('---------------------------------------')
+    print('Benchmark settings:')
+    print(f'    Num seeds    : {BENCHMARK_n}')
+    print(f'    Board size   : {BOARD_SIZE[0]}x{BOARD_SIZE[1]}')
+    print(f'    Mine density : {MINE_FRACTION}')
+    print(f'    Mines        : {MINES}')
+    print('- - - - - - - - - - - - - - - - - - - - ')
+    print('Benchmark results:')
+    print(f'    Win ratio                  : {COLOR.BLUE}{win_ratio}{COLOR.END}')
+    print(f'    Avg runtime [s]            : {COLOR.BLUE}{avg_runtime:.3f}{COLOR.END}')
+    print(f'    Avg unexplored cells ratio : {COLOR.BLUE}{unexplored_ratio:.3f}{COLOR.END}')
+    print('---------------------------------------\n\n')
+
+    return BENCHMARK_results
 
 
 if __name__ == '__main__':
     print("Launching game\n")
-    if MC:
-        print(f"Running {MC_n} Monte Carlo simulations\n")
-        MC_info = run_MC()
+    if BENCHMARK:
+        print(f"Running {BENCHMARK_n} tests\n")
+        BENCHMARK_results = run_benchmark()
     else:
         _ = main()

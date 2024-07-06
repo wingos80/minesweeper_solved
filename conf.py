@@ -1,15 +1,26 @@
 import numpy as np
 import matplotlib as mpl
 
+"""
+BENCHMARK SPECIFICATIONS:
+    15 tests (3 maps by 5 densities), 100 runs each:
+
+    SEEDS        = np.arange(0,100)
+    BOARD_SIZE   = [(8,8), (16,16), (64,64)]
+    BOMB_DENSITY = [0.1, 0.15, 0.2, 0.25, 0.3]
+    metrics      = success_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements
+"""
 # Set game seed
-SEED = 14
-# Toggling Monte Carlo
-MC = 1
-MC_n = 40 # number of simulations
+SEED = 24
+
+# Toggling Benchmark
+BENCHMARK = 1
+BENCHMARK_n = 100 # number of simulations
+
 
 # Gameplay configuration
-BOARD_SIZE = (16, 16)
-MINE_FRACTION = 0.25
+BOARD_SIZE = (8,8)
+MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
@@ -53,6 +64,17 @@ C_CYAN       = 0, 128, 128
 NUMBER_COLORS = [C_BLACK, C_BLUE, C_DARK_GREEN, C_RED, C_DARK_BLUE,
                 C_DARK_RED, C_CYAN, C_BLACK, C_GRAY, C_DARK_RED]
 
+class COLOR:
+   PURPLE = '\033[1;35;48m'
+   CYAN = '\033[1;36;48m'
+   BOLD = '\033[1;37;48m'
+   BLUE = '\033[1;34;48m'
+   GREEN = '\033[1;32;48m'
+   YELLOW = '\033[1;33;48m'
+   RED = '\033[1;31;48m'
+   BLACK = '\033[1;30;48m'
+   UNDERLINE = '\033[4;37;48m'
+   END = '\033[1;37;0m'
 
 # min max values for bomb likelihood
 VMIN, VMAX = -0.2, 1.2
