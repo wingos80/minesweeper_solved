@@ -3,6 +3,7 @@ import pygame as pg
 import numpy as np
 import time
 import argparse
+import pickle
 
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
@@ -542,70 +543,106 @@ class App:
             unexplored_cells = np.sum(self.board.digg_map == -1)
             unexplored_cells_ratio = unexplored_cells / (self.board.size[0] * self.board.size[1])
             self.info['unexplored_cells_ratio'] = unexplored_cells_ratio
-            print('    ', self.info)
+            # print('    ', self.info)
 
 
 def main():
-    print(f'Using seed: {SEED}')
+    if not BENCHMARK: print(f'Using seed: {SEED}')
     app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
 
 def run_benchmark():
-    global SEED, VISUAL
+    global SEED, VISUAL, BOARD_SIZE, MINES
 
     VISUAL = False
-    BENCHMARK_info = {}
 
     SEEDS = np.arange(0, BENCHMARK_n)
-    tic = time.time()
-    for seed in SEEDS:
-        SEED = seed
-        info = main()
-        
-        keys = list(info.keys())
-        for key in keys:
-            if key not in BENCHMARK_info:
-                BENCHMARK_info[key] = [info[key]]
-            BENCHMARK_info[key].append(info[key])
-    tic = time.time() - tic
+    toc = time.time()
+    case_time = 0
 
+    BOARD_SIZES = [(9, 9), (16, 16), (30, 16)]
+    MINE_FRACTIONS = [0.123457, 0.15625, 0.20625]
     
-    won_seeds = np.array(BENCHMARK_info['won']) == True
+    for i, case in enumerate(['A', 'B', 'C']):
+        BENCHMARK_info = {}
+        BOARD_SIZE = BOARD_SIZES[i]
+        MINE_FRACTION = MINE_FRACTIONS[i]
+        MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
-    win_ratio = sum(BENCHMARK_info['won']) / BENCHMARK_n
+        # create new results csv file
+        datetime = time.localtime()
+        month = datetime.tm_mon
+        year = datetime.tm_year
+        day = datetime.tm_mday
+        hour = datetime.tm_hour
+        minute = datetime.tm_min
+        second = datetime.tm_sec
+        time_string = f'{year}-{month}-{day}_{hour}-{minute}-{second}'
+        results_file = open(f"benchmark/{time_string}_{case}_results.csv", "w")
+        results_file.write(f"run,won,time,unexplored_cells_ratio\n") # writing the column heading
+        
+        # run the benchmark
+        for seed in SEEDS:
+            SEED = seed
+            info = main()
+            
+            keys = list(info.keys())
+            for key in keys:
+                if key not in BENCHMARK_info:
+                    BENCHMARK_info[key] = [info[key]]
+                BENCHMARK_info[key].append(info[key])
+            
+            results_file.write(f"{seed},{info['won']},{info['time']},{info['unexplored_cells_ratio']}\n")
 
-    times           = BENCHMARK_info['time']
-    avg_runtime     = np.mean(times)
-    avg_runtime_won = np.mean(np.array(times)[won_seeds])
+            tic = time.time() - toc
+            print(f'Elapsed time: {tic:.3f} s', end='\r')
 
-    unexplored_ratios          = BENCHMARK_info['unexplored_cells_ratio']
-    avg_unexplored_ratio       = np.mean(unexplored_ratios)
-    avg_unexplored_ratios_lost = np.mean(np.array(unexplored_ratios)[~won_seeds])
+        # computing benchmark results
+        won_seeds = np.array(BENCHMARK_info['won']) == True
 
-    BENCHMARK_results = {'win_ratio': win_ratio,
-                         'unexplored_cells_ratio': unexplored_ratios,
-                         'avg_runtime': avg_runtime,
-                         'avg_runtime_won': avg_runtime_won,
-                         'info': BENCHMARK_info}
+        win_ratio = sum(BENCHMARK_info['won']) / BENCHMARK_n
 
-    print('\n\n')
-    print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark complete{COLOR.END} (time elapsed: {tic:.3f} s)')
-    print('')
-    print('')
-    print('------------------------------------------------------------------')
-    print('Benchmark settings:')
-    print(f'    Num seeds    : {BENCHMARK_n}')
-    print(f'    Board size   : {BOARD_SIZE[0]}x{BOARD_SIZE[1]}')
-    print(f'    Mine density : {MINE_FRACTION}')
-    print(f'    Mines        : {MINES}')
-    print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-    print('Benchmark results:')
-    print(f'    Win ratio                     : {COLOR.BLUE}{win_ratio}{COLOR.END}')
-    print(f'    Avg runtime [s]               : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
-    print(f'    Avg unexplored cells ratio    : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
-    print('------------------------------------------------------------------\n\n')
+        times           = BENCHMARK_info['time']
+        avg_runtime     = np.mean(times)
+        avg_runtime_won = np.mean(np.array(times)[won_seeds])
+        case_time = tic - case_time
+
+        unexplored_ratios          = BENCHMARK_info['unexplored_cells_ratio']
+        avg_unexplored_ratio       = np.mean(unexplored_ratios)
+        avg_unexplored_ratios_lost = np.mean(np.array(unexplored_ratios)[~won_seeds])
+
+        BENCHMARK_results = {'win_ratio': win_ratio,
+                            'unexplored_cells_ratio': avg_unexplored_ratio,
+                            'unexplored_cells_ratio_lost': avg_unexplored_ratios_lost,
+                            'avg_runtime': avg_runtime,
+                            'avg_runtime_won': avg_runtime_won,
+                            'info': BENCHMARK_info}
+        
+        # save benchmark results
+        with open(f"benchmark/{time_string}_{case}_results.pickle", "wb") as f:
+            pickle.dump(BENCHMARK_results, f)
+        
+        
+        # print benchmark results
+        print('\n')
+        print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark case {case} complete{COLOR.END} (case time: {case_time:.3f} s)')
+        print(f'Results saved to: ./benchmark/{time_string}_{case}_results')
+        print('')
+        print('-------------------------------------------------------------------')
+        print(f'Benchmark settings:')
+        print(f'    Num seeds    : {BENCHMARK_n}')
+        print(f'    Board size   : {BOARD_SIZE[0]}x{BOARD_SIZE[1]}')
+        print(f'    Mine density : {MINE_FRACTION}')
+        print(f'    Mines        : {MINES}')
+        print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+        print('Benchmark results:')
+        print(f'    Win ratio                     : {COLOR.BLUE}{win_ratio}{COLOR.END}')
+        print(f'    Avg runtime [s]               : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
+        print(f'    Avg unexplored cells ratio    : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
+        print('-------------------------------------------------------------------\n\n')
+        
 
     return BENCHMARK_results
 
@@ -615,8 +652,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs various MAPF algorithms')
     parser.add_argument('--seed', type=int, default=None,
                         help='The seed for the game (default: None)')
+    parser.add_argument('--bm', type=int, default=BENCHMARK,
+                        help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
+    parser.add_argument('--runs', type=int, default=BENCHMARK_n,
+                        help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
     args = parser.parse_args()
     
+    BENCHMARK = args.bm
+    BENCHMARK_n = args.runs
+
     if BENCHMARK:
         print(f"Running {BENCHMARK_n} tests\n")
         BENCHMARK_results = run_benchmark()
