@@ -9,7 +9,7 @@ BENCHMARK SPECIFICATIONS:
 
 beginner difficulty:
     BOARD_SIZE = (9, 9)
-    MINE_FRACTION = 0.12346
+    MINE_FRACTION = 0.12347
     MINES = 10
 
 intermediate difficulty:

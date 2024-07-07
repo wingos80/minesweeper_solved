@@ -58,11 +58,12 @@ class Board:
             # self.mines = 1
             # self.mine_map[1, 1] = 1
 
-            # case 2
-            self.mines = 3
-            self.mine_map[0, 1] = 1
-            self.mine_map[1, 0] = 1
-            self.mine_map[2, 1] = 1
+            # # case 2
+            # self.mines = 3
+            # self.mine_map[0, 1] = 1
+            # self.mine_map[1, 0] = 1
+            # self.mine_map[2, 1] = 1
+            pass
 
     def count_mines(self, pos):
         """ Returns the count of surrounding flags from a certain position """

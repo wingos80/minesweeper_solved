@@ -580,7 +580,7 @@ def run_benchmark():
         minute = datetime.tm_min
         second = datetime.tm_sec
         time_string = f'{year}-{month}-{day}_{hour}-{minute}-{second}'
-        results_file = open(f"benchmark/{time_string}_{case}_results.csv", "w")
+        results_file = open(f"benchmark/{time_string}_{case}-results.csv", "w")
         results_file.write(f"run,won,time,unexplored_cells_ratio\n") # writing the column heading
         
         # run the benchmark
@@ -621,7 +621,7 @@ def run_benchmark():
                             'info': BENCHMARK_info}
         
         # save benchmark results
-        with open(f"benchmark/{time_string}_{case}_results.pickle", "wb") as f:
+        with open(f"benchmark/{time_string}_{case}-results.pickle", "wb") as f:
             pickle.dump(BENCHMARK_results, f)
         
         
