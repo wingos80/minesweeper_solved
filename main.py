@@ -34,6 +34,8 @@ class App:
         self.offset = 13, 56
         self.board = Board(board_size, mines, seed=self.seed, random_place=random_place)
         self.solver = GIGAAI(self.board, board_size, mines, seed=self.seed)
+        self.mines = mines
+        self.board_size = board_size
 
         if visual:
             self.screen_size = (
@@ -197,7 +199,7 @@ class App:
         oldboard_size = self.board.size
 
         self.board.__init__(board_size, mines, seed=self.seed)
-        self.solver = GIGAAI(self.board, seed=self.seed)
+        self.solver = GIGAAI(self.board, self.board_size, self.mines, seed=self.seed)
 
         self.start_time = None
         self.alive = True
