@@ -179,11 +179,12 @@ class GIGAAI:
             # allow solver to see if it's worthwile to select far cells
             min_estimate = np.min(self.x_full[unknown_mask])
             max_estimate = np.max(self.x_full[unknown_mask])
-            if min_estimate > 0.3 and max_estimate < 0.7: # if estimates are very uncertain, then see if it's worthwile to select far cells
-                far_cells_mask = np.logical_not(informed_mask)  # Shape: full, true only for far cells (cells with no information, i.e. cells that are not neighbouring any explored cell)
+            far_cells_mask = np.logical_not(informed_mask)  # Shape: full, true only for far cells (cells with no information, i.e. cells that are not neighbouring any explored cell)
+            num_far_cells = np.sum(far_cells_mask)
+            if min_estimate > 0.3 and max_estimate < 0.7 and num_far_cells > 0: # if estimates are very uncertain, then see if it's worthwile to select far cells
                 estimated_bombs = np.sum(self.x_full[unknown_mask]) # Number of bombs estimated by the current solution vector
                 far_bombs = self.mines - estimated_bombs - np.sum(flag_mask) # Number of bombs that are estimated to exist in the far cells
-                naive_probability_estimate = far_bombs/np.sum(far_cells_mask)
+                naive_probability_estimate = far_bombs/num_far_cells
                 self.x_full[far_cells_mask] = naive_probability_estimate
         
             # print(f"A:\n {A.toarray()}")
