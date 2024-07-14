@@ -34,12 +34,15 @@ import time
 
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)},suppress=True)
 class GIGAAI:
-    def __init__(self, board, seed=None):
+    def __init__(self, board, board_size, mines, seed=None):
         if seed is not None:
             np.random.seed(seed)
             
         self.A_full = self.make_matrix_sparse(board)
         self.x_full = np.nan * np.ones(board.digg_map.shape[0] * board.digg_map.shape[1])
+
+        self.mines = mines
+        self.board_size = board_size
         
     def make_matrix_sparse(self, board):
         rows, cols = board.digg_map.shape
@@ -98,7 +101,7 @@ class GIGAAI:
         
     def solve_constrained_problem(self, board, A, b, known_mask, unknown_mask):
         n_undiscovered = np.count_nonzero(board.digg_map == -1)
-        x0 = MINES / n_undiscovered * np.ones(A.shape[1])
+        x0 = self.mines / n_undiscovered * np.ones(A.shape[1])
         residual = lambda x: A@x - b
         x = opt.least_squares(residual, x0, bounds=(0,1), max_nfev=100).x
         # print(f"Opt: {x}")
@@ -140,21 +143,21 @@ class GIGAAI:
         zero_known_mask[explored_mask & np.logical_not(flag_mask)] = (b_ef == 0) # Shape: explored, false for equations with 0 RHS after flags were brought to RHS
         A_zero = A_ef_ui[b_ef==0] # Shape: (explored & nonzero RHS) x (unexplored & informed)
         zero_unknown_mask = np.zeros_like(unexplored_mask)
-        zero_unknown_mask[unexplored_mask & informed_mask] = (np.diff(A_zero.tocsc().indptr) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb)
+        zero_unknown_mask[unexplored_mask & informed_mask] = (np.diff(A_zero.tocsc().indptr) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb), TODO, check if this is correct
         b = b_ef[b_ef!=0] # Retain only equations for nonzero RHS
 
         self.x_full = np.empty_like(tiles, dtype=float)
         self.x_full[:] = np.nan
         self.x_full[zero_unknown_mask] = 0 # Set tiles that were fully determined to be zero to exactly zero
+        unknown_mask = unexplored_mask & informed_mask & np.logical_not(zero_unknown_mask) # Shape: full, true only for true unknowns (unexplored, informed and not already fully determined)
         if not np.any(zero_unknown_mask): # Solve tiles only if there is no fully determined tile that can be picked
-            unknown_mask = unexplored_mask & informed_mask & np.logical_not(zero_unknown_mask) # Shape: full, true only for true unknowns (unexplored, informed and not already fully determined)
             known_mask = explored_mask & np.logical_not(zero_known_mask) & np.logical_not(flag_mask)
             A = self.A_full[known_mask]
             A = A[:,unknown_mask] # Shape: known x unknown = (explored & nonzero RHS) x (unexplored & informed & fully determined nonzero)
             
             self.A_reduced = A
             unexplored_cells = (tiles < 0)
-            naive_estimate = MINES/np.sum(unexplored_cells)
+            naive_estimate = self.mines/np.sum(unexplored_cells)
             x0 = naive_estimate*np.ones(np.sum(unknown_mask))
             # Solve LSQR
             self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False,x0=x0)[0]
@@ -173,7 +176,16 @@ class GIGAAI:
             # x0 = 0.5 * np.ones(A.shape[1])
             # self.x_full[unknown_mask] = opt.least_squares(lambda x: A@x - b, 0.5*np.ones(np.count_nonzero(unknown_mask)), bounds=(0,1), max_nfev=100).x
 
-            
+            # allow solver to see if it's worthwile to select far cells
+            min_estimate = np.min(self.x_full[unknown_mask])
+            max_estimate = np.max(self.x_full[unknown_mask])
+            if min_estimate > 0.3 and max_estimate < 0.7: # if estimates are very uncertain, then see if it's worthwile to select far cells
+                far_cells_mask = np.logical_not(informed_mask)  # Shape: full, true only for far cells (cells with no information, i.e. cells that are not neighbouring any explored cell)
+                estimated_bombs = np.sum(self.x_full[unknown_mask]) # Number of bombs estimated by the current solution vector
+                far_bombs = self.mines - estimated_bombs - np.sum(flag_mask) # Number of bombs that are estimated to exist in the far cells
+                naive_probability_estimate = far_bombs/np.sum(far_cells_mask)
+                self.x_full[far_cells_mask] = naive_probability_estimate
+        
             # print(f"A:\n {A.toarray()}")
             # print(f"x:\n {self.x_full[unknown_mask]}")
             # print(f"b_ef:\n {b}")
@@ -209,7 +221,7 @@ class GIGAAI:
 
     def play_one_move(self, board):
         # If all uncovered tiles are mines, game is over, return None
-        if np.sum(board.digg_map < 0) == MINES:
+        if np.sum(board.digg_map < 0) == self.mines:
             return None, None
         
         # 
@@ -236,245 +248,3 @@ class GIGAAI:
 
         
     
-    
-class AI:
-    def __init__(self, board, seed=0):
-        np.random.seed(seed)
-        self.board          = board
-        self.p_map          = np.ones(BOARD_SIZE)*MINES/(BOARD_SIZE[0]*BOARD_SIZE[1])
-        self.revealed_cells = np.zeros(BOARD_SIZE, dtype='int')
-        self.mine_map       = np.zeros(BOARD_SIZE, dtype='int') - 1
-        self.neighbours     = {}
-
-        # # register the neighbours for every cell on the board
-        # for i in range (BOARD_SIZE[0]):
-        #     for j in range (BOARD_SIZE[1]):
-        #         neigh_x = np.array([i-1,i,i+1])
-        #         neigh_y = np.array([j-1,j,j+1])
-        #         temp = np.array(np.meshgrid(neigh_x,neigh_y)).T.reshape(-1,2)
-        #         neighbours = np.delete(temp,np.where((temp[:,0] == i) & (temp[:,1] == j)),axis=0)
-        #         self.neighbours[i,j] = neighbours
-    
-
-    def get_action(self, board):
-        """
-        returns the cell coordinates which has the lowest probability to have a mine
-        and the probability itself
-        """
-
-        # find the minimum probability
-        P = self.p_map.copy()
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if board.digg_map[i,j] >= 0:
-                    P[i,j] = 999
-        pick_cell = randargmin(P, keepshape=True)
-        min_prob = P[pick_cell]
-        return pick_cell, min_prob
-
-    def increment_neighbours(self, pos, n_bombs):
-        """
-        increments the probability of the neighbours of the given cell by
-        the expected value of bombs surrounding the given cell:
-        """
-
-        neighbours = []
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                count_pos = (pos[0]+i, pos[1]+j)
-                if not self.board.inside_board(count_pos):
-                    continue
-                if self.board.digg_map[count_pos] == -1:
-                    neighbours.append(count_pos)
-
-        for neighbour in neighbours:
-            self.p_map[neighbour] += n_bombs/len(neighbours)
-
-    def increment_neighbours_2(self, pos, n_bombs):
-        """
-        increments the probability of the neighbours of the given cell by
-        the expected value of bombs surrounding the given cell:
-        """
-
-        neighbours = []
-        expected_bombs = 0
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                count_pos = (pos[0]+i, pos[1]+j)
-                if not self.board.inside_board(count_pos):
-                    continue
-                if self.board.digg_map[count_pos] == -1:
-                    neighbours.append(count_pos)
-                    expected_bombs += self.p_map[count_pos]
-        if len(neighbours) > 0:
-            delta = (n_bombs-expected_bombs)/len(neighbours)
-            for neighbour in neighbours:
-                self.delta_p_map[neighbour] += delta
-
-    def action1(self):
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] >= 0:
-                    n_bombs = self.board.digg_map[i,j]
-                    self.increment_neighbours((i,j), n_bombs)
-
-    def action2(self):
-        
-        # correct for the over prediction of mines if it exists
-        p_total = np.sum(self.p_map)
-        excess_p = p_total - MINES
-
-        # subtract excess probabilities from the probaiblity map once
-        while excess_p > 0:
-            self.p_map = np.clip(self.p_map, None, 1)
-            # find minimum non-zero value on p_map
-            smallest_decrement = np.min(self.p_map[self.p_map > 0])
-            
-            n_positives       = np.sum(self.p_map > 0)
-            uniform_decrement = excess_p/n_positives
-
-            self.p_map -= min(smallest_decrement, uniform_decrement)
-            self.p_map = np.clip(self.p_map, 0, None)
-
-            excess_p = np.sum(self.p_map) - MINES
-
-    def action3(self):
-        self.delta_p_map = np.zeros(BOARD_SIZE)
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] >= 1:
-                    n_bombs = self.board.digg_map[i,j]
-                    self.increment_neighbours_2((i,j), n_bombs)
-
-        # print(self.delta_p_map)
-        self.p_map += self.delta_p_map
-
-    def action4(self):
-        self.p_map = np.clip(self.p_map, None, 1)
-        self.p_map = np.clip(self.p_map, 0, None)
-        
-    
-    def iterate(self, p_map):
-        """
-        placeholder function for calling all the algorithm computations
-        TO BE FILLED
-        """
-        # # correct for the under prediction of mines if it exists
-        # self.action3()
-        # print(self.p_map.T)
-        
-        # # # correct for the over prediction of mines if it exists
-        # # self.action2()
-        # # print(self.p_map)
-
-        # self.action4()
-        return p_map
-
-    def play_one_move(self):
-        """
-        iterates over the entire board once and updates the probability map
-        """
-        # first check if number of unexplored cells equal number of mines
-        # if so, mark all unexplored cells as mines
-        if np.sum(self.board.digg_map == -1) == MINES:
-            self.p_map[self.board.digg_map == -1] = 1
-            print("all bombs found!")
-            return
-
-
-
-        pick, prob = self.get_action(self.board)
-        print(f'picked cell: {pick}, with probaility of having bomb = {prob}')
-
-        _  = self.board.digg(pick)
-        
-        empties = 0
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    empties += 1
-
-        increment = MINES/empties
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    self.p_map[i,j] = increment
-                if self.board.digg_map[i,j] >= 0:
-                    self.p_map[i,j] = 0
-        
-        prev_map = self.p_map.copy()
-        delta = 1
-        while delta > 0.001:
-            self.iterate()
-            delta = np.sum(np.abs(self.p_map - prev_map))
-            prev_map = self.p_map.copy()
-            # print(delta)
-
-        print('finished iterting probability map')
-
-    def compute_naive_map(self):
-        """
-        Computes a naive probability map,
-        by making the assumption that all empty
-        cells are equally likely to have a bomb.
-        """
-        p_map = np.ones(BOARD_SIZE)
-
-        empties = 0
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    empties += 1
-
-        increment = MINES/empties
-        
-        for i in range(BOARD_SIZE[0]):
-            for j in range(BOARD_SIZE[1]):
-                if self.board.digg_map[i,j] == -1:
-                    p_map[i,j] = increment
-                if self.board.digg_map[i,j] >= 0:
-                    p_map[i,j] = 0
-
-        return p_map
-
-    def update_map(self, board):
-        """
-        iterates over the entire board once and updates the probability map
-        """
-        self.board = board
-        # first check if number of unexplored cells equal number of mines
-        # if so, mark all unexplored cells as mines
-        if np.sum(self.board.digg_map == -1) == MINES:
-            self.p_map[self.board.digg_map == -1] = 1
-            print("all bombs found!")
-            return
-        
-        # # compute the naive probability map
-        # self.p_map = self.compute_naive_map()
-        
-        # prev_map = self.p_map.copy()
-        # delta = 1
-        # print(prev_map)
-        # while delta > 0.001:
-        #     self.p_map = self.iterate(self.p_map)
-        #     delta = np.sum(np.abs(self.p_map - prev_map))
-        #     prev_map = self.p_map.copy()
-        #     # print(prev_map)
-        #     print(delta)
-        #     print('--------')
-
-        print('finished itearting probability map')
-
-# seed = 2
-# np.random.seed(seed)
-# board = Board(BOARD_SIZE,MINES,seed=seed)
-# aa = AI(board, seed=seed)
-
-# # board.digg((0,0))
-# aa.play_one_move()
-# print(board.digg_map)
-# aa.play_one_move()
-# print(board.digg_map)
-# aa.play_one_move()
-# print(board.digg_map)
-# print(aa)

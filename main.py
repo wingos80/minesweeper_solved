@@ -33,7 +33,7 @@ class App:
 
         self.offset = 13, 56
         self.board = Board(board_size, mines, seed=self.seed, random_place=random_place)
-        self.solver = GIGAAI(self.board, seed=self.seed)
+        self.solver = GIGAAI(self.board, board_size, mines, seed=self.seed)
 
         if visual:
             self.screen_size = (
@@ -650,11 +650,11 @@ def run_benchmark():
 if __name__ == '__main__':
     print("Launching game\n")
     parser = argparse.ArgumentParser(description='Runs various MAPF algorithms')
-    parser.add_argument('--seed', type=int, default=None,
+    parser.add_argument('-seed', type=int, default=None,
                         help='The seed for the game (default: None)')
-    parser.add_argument('--bm', type=int, default=BENCHMARK,
+    parser.add_argument('-bm', type=int, default=BENCHMARK,
                         help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
-    parser.add_argument('--runs', type=int, default=BENCHMARK_n,
+    parser.add_argument('-runs', type=int, default=BENCHMARK_n,
                         help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
     args = parser.parse_args()
     
