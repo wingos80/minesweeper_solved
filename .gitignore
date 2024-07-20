@@ -1,3 +1,8 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
+
+# random tests file
 test.py
+
+# benchmarking results folder
 benchmark/

@@ -4,6 +4,7 @@ import numpy as np
 import time
 import argparse
 import pickle
+import os
 
 from msdraw import draw_border, swap_color, render_cell
 from msgui import NumberDisplay, SmileButton
@@ -622,8 +623,11 @@ def run_benchmark():
                             'avg_runtime_won': avg_runtime_won,
                             'info': BENCHMARK_info}
         
-        # save benchmark results
-        with open(f"benchmark/{time_string}_{case}-results.pickle", "wb") as f:
+        # save benchmark results, create benchmark folder if it does not exist yet
+        if not os.path.exists('./benchmark/'):
+            os.makedirs('./benchmark/')
+            print(f"created directory: {'./benchmark/'}")
+        with open(f"./benchmark/{time_string}_{case}-results.pickle", "wb") as f:
             pickle.dump(BENCHMARK_results, f)
         
         
