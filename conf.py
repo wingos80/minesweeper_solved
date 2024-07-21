@@ -28,12 +28,17 @@ metrics = win_rate, number of (un)explored cells upon game end, runtime till gam
 SEED = 4
 
 # Toggling Benchmark
-BENCHMARK = 0
+BENCHMARK = 1
 BENCHMARK_n = 1000 # number of simulations
+
+# Solver settings
+SOLVER = "full" # Available: "full", "decomposition"
+METHOD = "single" # Available: "single", "iterative", "trf"
 
 
 # Gameplay configuration
-BOARD_SIZE = (30, 16)
+# BOARD_SIZE = (30, 16)
+BOARD_SIZE = (9, 9)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
