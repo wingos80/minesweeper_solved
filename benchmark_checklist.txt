@@ -1,7 +1,0 @@
-run the benchmark for
-- whatever solver we have now
-- abs() before using argmin() to select next move
-- solver with full rule
-- solver using nnls
-- solver using linear_lsq
-
