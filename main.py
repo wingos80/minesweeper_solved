@@ -641,7 +641,7 @@ def run_benchmark():
         print('\n')
         print(f'{COLOR.BOLD}{COLOR.GREEN}Benchmark case {case} complete{COLOR.END} (case time: {case_time:.3f} s)')
         print(f'Results saved to: ./benchmark/{time_string}_{case}_results')
-        print('')
+        print(f'{BENCHMARK_NAME}')
         print('-------------------------------------------------------------------')
         print(f'Benchmark settings:')
         print(f'    Num seeds    : {BENCHMARK_n}')
@@ -667,12 +667,15 @@ if __name__ == '__main__':
                         help='The seed for the game (default: None)')
     parser.add_argument('-bm', type=int, default=BENCHMARK,
                         help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
+    parser.add_argument('-bm_name', type=str, default="",
+                        help='Set a print name for the benchmark run')
     parser.add_argument('-runs', type=int, default=BENCHMARK_n,
                         help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
     args = parser.parse_args()
     
     BENCHMARK = args.bm
     BENCHMARK_n = args.runs
+    BENCHMARK_NAME = args.bm_name
 
     if BENCHMARK:
         print(f"Running {BENCHMARK_n} tests\n")
