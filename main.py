@@ -233,24 +233,26 @@ class App:
 
     def play_ai(self, act=False):
         # run the solver and stuff
-        play_pos, flag_pos_list = self.solver.play_one_move(self.board)
+        if self.board.mine_map is None: # At start of game, call solver to get random position
+            self.play_pos, self.flag_pos_list = self.solver.play_one_move(self.board)
 
-        if play_pos:
+        # if self.play_pos:
             # print(f"Solver plays move at: (row,col)=({play_pos[1]+1},{play_pos[0]+1})")
-            if act:
-
-                if not self.board.digg(play_pos): 
-                    self.end_game()
-                
-                for flag_pos in flag_pos_list:
-                    self.board.place_flag(flag_pos)
-                
-                self.on_success_dig()
-        elif play_pos == None:
-            # decalre we lost if solver does not know what to do
-            self.end_game()
-                
-        _, _ = self.solver.play_one_move(self.board)
+        if act:
+            if not self.board.digg(self.play_pos): 
+                self.end_game()
+            
+            for flag_pos in self.flag_pos_list:
+                self.board.place_flag(flag_pos)
+            
+            self.on_success_dig()
+        # elif self.play_pos == None:
+        #     # Choose random position at start of game
+        #     # declare we lost if solver does not know what to do
+        #     self.end_game()
+        
+        if self.alive:
+            self.play_pos, self.flag_pos_list = self.solver.play_one_move(self.board)
     
     def check_events(self):
         """ Method to manage player events:
@@ -587,6 +589,7 @@ def run_benchmark():
         results_file.write(f"run,won,time,unexplored_cells_ratio\n") # writing the column heading
         
         # run the benchmark
+        counter = 1
         for seed in SEEDS:
             SEED = seed
             info = main()
@@ -600,17 +603,19 @@ def run_benchmark():
             results_file.write(f"{seed},{info['won']},{info['time']},{info['unexplored_cells_ratio']}\n")
 
             tic = time.time() - toc
-            print(f'Elapsed time: {tic:.3f} s', end='\r')
+            print(f'Elapsed time: {tic:.3f} s, Run {counter}', end='\r')
+            counter += 1
 
         # computing benchmark results
         won_seeds = np.array(BENCHMARK_info['won']) == True
 
         win_ratio = sum(BENCHMARK_info['won']) / BENCHMARK_n
 
-        times           = BENCHMARK_info['time']
-        avg_runtime     = np.mean(times)
-        avg_runtime_won = np.mean(np.array(times)[won_seeds])
-        case_time = tic - case_time
+        times                = BENCHMARK_info['time']
+        avg_runtime          = np.mean(times)
+        avg_runtime_won      = np.mean(np.array(times)[won_seeds])
+        size_per_runtime_won = BOARD_SIZE[0] * BOARD_SIZE[1] / avg_runtime_won
+        case_time            = tic - case_time
 
         unexplored_ratios          = BENCHMARK_info['unexplored_cells_ratio']
         avg_unexplored_ratio       = np.mean(unexplored_ratios)
@@ -621,6 +626,7 @@ def run_benchmark():
                             'unexplored_cells_ratio_lost': avg_unexplored_ratios_lost,
                             'avg_runtime': avg_runtime,
                             'avg_runtime_won': avg_runtime_won,
+                            'size_per_runtime_won': size_per_runtime_won,
                             'info': BENCHMARK_info}
         
         # save benchmark results, create benchmark folder if it does not exist yet
@@ -644,9 +650,10 @@ def run_benchmark():
         print(f'    Mines        : {MINES}')
         print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
         print('Benchmark results:')
-        print(f'    Win ratio                     : {COLOR.BLUE}{win_ratio}{COLOR.END}')
-        print(f'    Avg runtime [s]               : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
-        print(f'    Avg unexplored cells ratio    : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
+        print(f'    Win ratio                        : {COLOR.BLUE}{win_ratio}{COLOR.END}')
+        print(f'    Avg runtime [s]                  : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
+        print(f'    Board size per avg runtime [1/s] : {COLOR.BLUE}{size_per_runtime_won:.3f}{COLOR.END}')
+        print(f'    Avg unexplored cells ratio       : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
         print('-------------------------------------------------------------------\n\n')
         
 
