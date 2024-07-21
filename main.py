@@ -561,6 +561,11 @@ def main():
 def run_benchmark():
     global SEED, VISUAL, BOARD_SIZE, MINES
 
+    # create benchmark folder if it does not exist yet
+    if not os.path.exists('./benchmark/'):
+        os.makedirs('./benchmark/')
+        print(f"created directory: {'./benchmark/'}")
+        
     VISUAL = False
 
     SEEDS = np.arange(0, BENCHMARK_n)
@@ -629,10 +634,7 @@ def run_benchmark():
                             'size_per_runtime_won': size_per_runtime_won,
                             'info': BENCHMARK_info}
         
-        # save benchmark results, create benchmark folder if it does not exist yet
-        if not os.path.exists('./benchmark/'):
-            os.makedirs('./benchmark/')
-            print(f"created directory: {'./benchmark/'}")
+        # save benchmark results
         with open(f"./benchmark/{time_string}_{case}-results.pickle", "wb") as f:
             pickle.dump(BENCHMARK_results, f)
         
