@@ -160,7 +160,11 @@ class GIGAAI:
             naive_estimate = self.mines/np.sum(unexplored_cells)
             x0 = naive_estimate*np.ones(np.sum(unknown_mask))
             # Solve LSQR
-            self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False,x0=x0)[0]
+
+            # self.x_full[unknown_mask] = spla.lsqr(A, b, btol=1e-3, show=False,x0=x0)[0]
+            residual = lambda x: np.sum(np.sqrt((A@x - b)**2))
+            cons = opt.LinearConstraint(np.ones_like(x0), 0, self.mines- np.sum(flag_mask)) # keep sum of estimates less than remaining bombs
+            self.x_full[unknown_mask] = opt.minimize(residual, x0=x0, constraints=cons).x
 
             itr_max = 20
             for itr in range(itr_max):
@@ -244,7 +248,3 @@ class GIGAAI:
         # print(f'play_pos: {play_pos}')
         # print(f'flag_pos_list: {flag_pos_list}')
         return play_pos, flag_pos_list
-    
-
-        
-    

@@ -605,7 +605,7 @@ def run_benchmark():
             results_file.write(f"{seed},{info['won']},{info['time']},{info['unexplored_cells_ratio']}\n")
 
             tic = time.time() - toc
-            print(f'Elapsed time: {tic:.3f} s', end='\r')
+            print(f'{seed}/{BENCHMARK_n}- elapsed time: {tic:.3f} s', end='\r')
 
         # computing benchmark results
         won_seeds = np.array(BENCHMARK_info['won']) == True
@@ -646,9 +646,9 @@ def run_benchmark():
         print(f'    Mines        : {MINES}')
         print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
         print('Benchmark results:')
-        print(f'    Win ratio                     : {COLOR.BLUE}{win_ratio}{COLOR.END}')
-        print(f'    Avg runtime [s]               : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
-        print(f'    Avg unexplored cells ratio    : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
+        print(f'    Win ratio                  : {COLOR.BLUE}{win_ratio}{COLOR.END}')
+        print(f'    Avg runtime [s]            : {COLOR.BLUE}{avg_runtime:.3f}, {avg_runtime_won:.3f}{COLOR.END} (all, only won)')
+        print(f'    Avg unexplored cells ratio : {COLOR.BLUE}{avg_unexplored_ratio:.3f}, {avg_unexplored_ratios_lost:.3f}{COLOR.END} (all, only lost)')
         print('-------------------------------------------------------------------\n\n')
         
 

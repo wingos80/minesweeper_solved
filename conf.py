@@ -25,15 +25,15 @@ expert difficulty:
 metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 4
+SEED = 3
 
 # Toggling Benchmark
-BENCHMARK = 0
+BENCHMARK = 1
 BENCHMARK_n = 1000 # number of simulations
 
 
 # Gameplay configuration
-BOARD_SIZE = (30, 16)
+BOARD_SIZE = (10, 5)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
