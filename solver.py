@@ -33,7 +33,6 @@ from utils.functions import *
 import matplotlib.pyplot as plt
 import time
 
-# np.set_printoptions(formatter={'float': lambda x: "{0:0.6f}".format(x)},suppress=True)
 class GIGAAI:
     methods = {
         "lstsq": {
@@ -124,9 +123,10 @@ class GIGAAI:
 
         print(self.x_full)
 
-        flag_pos_list = []
-        for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
-            flag_pos_list.append(self.get_pos(board, flag_idx))
+        # flag_pos_list = []
+        # for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
+        #     flag_pos_list.append(self.get_pos(board, flag_idx))
+        flag_pos_list = self.put_flags(board)
         # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
 
         # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
@@ -156,10 +156,11 @@ class GIGAAI:
 
         print(self.x_full)
 
-        flag_pos_list = []
-        for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
-            flag_pos_list.append(self.get_pos(board, flag_idx))
-        # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
+        # flag_pos_list = []
+        # for flag_idx in np.isclose(self.x_full, 1, atol=0.05).nonzero()[0]:
+        #     flag_pos_list.append(self.get_pos(board, flag_idx))
+        # # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
+        flag_pos_list = self.put_flags(board)
 
         return play_pos, flag_pos_list
         
@@ -265,13 +266,20 @@ class GIGAAI:
         play_pos = self.get_pos(board, play_idx)
 
 
-        flag_pos_list = []
-        for flag_idx in np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
-            flag_pos_list.append(self.get_pos(board, flag_idx))
+        # flag_pos_list = []
+        # for flag_idx in np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
+        #     flag_pos_list.append(self.get_pos(board, flag_idx))
+        flag_pos_list = self.put_flags(board)
 
         # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
         # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
         return play_pos, flag_pos_list
+
+    def put_flags(self, board):
+        flag_pos_list = []
+        for flag_idx in np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
+            flag_pos_list.append(self.get_pos(board, flag_idx))
+        return flag_pos_list
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
