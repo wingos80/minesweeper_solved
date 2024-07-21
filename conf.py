@@ -32,7 +32,7 @@ BENCHMARK = 1
 BENCHMARK_n = 1000 # number of simulations
 
 # Solver settings
-SOLVER = "decomposition" # Available: "full", "decomposition"
+SOLVER = "full" # Available: "full", "decomposition"
 METHOD = "lstsq"
 TOL = 1e-3 # Iterative solver tolerance
 
