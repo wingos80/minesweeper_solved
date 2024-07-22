@@ -29,18 +29,16 @@ SEED = 3
 
 # Toggling Benchmark
 BENCHMARK = 1
-BENCHMARK_n = 1000 # number of simulations
+BENCHMARK_n = 1000  # number of simulations
 
 # Solver settings
 SOLVER = "full" # Available: "full", "decomposition"
 METHOD = "lstsq"
-TOL = 1e-3 # Iterative solver tolerance
-
-
-
+TOL = 1e-3  # Iterative solver tolerance
+FLAG_TOL = 1e-3  # Flagging tolerance, how close an estimate is to 1 before placing a flag
 
 # Gameplay configuration
-# BOARD_SIZE = (30, 16)
+# BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
 BOARD_SIZE = (9, 9)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])

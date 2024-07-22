@@ -251,7 +251,7 @@ class App:
         #     # declare we lost if solver does not know what to do
         #     self.end_game()
         
-        if self.alive:
+        if self.alive and not self.won:
             self.play_pos, self.flag_pos_list = self.solver.play_one_move(self.board)
     
     def check_events(self):
@@ -553,7 +553,7 @@ class App:
 
 def main():
     if not BENCHMARK: print(f'Using seed: {SEED}')
-    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL)
+    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL, random_place=False)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
