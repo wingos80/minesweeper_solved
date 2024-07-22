@@ -33,7 +33,10 @@ BENCHMARK_n = 1000 # number of simulations
 
 # Solver settings
 SOLVER = "full" # Available: "full", "decomposition"
-METHOD = "single" # Available: "single", "iterative", "trf"
+METHOD = "lstsq"
+TOL = 1e-3 # Iterative solver tolerance
+
+
 
 
 # Gameplay configuration

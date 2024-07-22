@@ -34,6 +34,33 @@ import matplotlib.pyplot as plt
 import time
 
 class GIGAAI:
+    methods = {
+        "lstsq": {
+            "f": lambda A, b, x0: np.linalg.lstsq(A, b)[0],
+            "sparse": False,
+        },
+        "bvls": {
+            "f": lambda A, b, x0: opt.lsq_linear(A, b, bounds=[0,1], method='bvls', lsq_solver="exact").x,
+            "sparse": False,
+        },
+        "nnls": {
+            "f": lambda A, b, x0: opt.nnls(A, b)[0],
+            "sparse": False,
+        },
+        "lsmr": {
+            "f": lambda A, b, x0: spla.lsmr(A, b, btol=TOL, show=False, x0=x0)[0],
+            "sparse": True,
+        },
+        "lsqr": {
+            "f": lambda A, b, x0: spla.lsqr(A, b, btol=TOL, show=False, x0=x0)[0],
+            "sparse": True,
+        },
+        "trf": {
+            "f": lambda A, b, x0: opt.lsq_linear(A, b, bounds=[0,1], method='trf', lsq_solver="lsmr", lsmr_tol=TOL, tol=TOL).x,
+            "sparse": True,
+        },
+    }
+
     def __init__(self, board, board_size, mines, seed=None):
         if seed is not None:
             np.random.seed(seed)
@@ -46,91 +73,17 @@ class GIGAAI:
         
     def full_matrix(self, board):
         rows, cols = board.digg_map.shape
-        diag_block = sp.eye_array(cols, k=1) + sp.eye_array(cols, k=-1)
-        off_block = diag_block + sp.eye_array(cols)
-        full_matrix = sp.kron(sp.eye_array(rows), diag_block) + sp.kron(sp.eye_array(rows,k=1)+sp.eye_array(rows,k=-1), off_block)
+        if self.methods[METHOD]["sparse"]:
+            diag_block = sp.eye_array(cols, k=1) + sp.eye_array(cols, k=-1)
+            off_block = diag_block + sp.eye_array(cols)
+            full_matrix = sp.kron(sp.eye_array(rows), diag_block) + sp.kron(sp.eye_array(rows,k=1)+sp.eye_array(rows,k=-1), off_block)
+        else:
+            diag_block = np.eye(cols, k=1) + np.eye(cols, k=-1)
+            off_block = diag_block + np.eye(cols)
+            full_matrix = np.kron(np.eye(rows), diag_block) + np.kron(np.eye(rows, k=1) + np.eye(rows, k=-1), off_block)
         return full_matrix.astype(int)
 
 
-    def linear_problem(self, board, n_bombs=None):
-        known_mask = np.logical_and(board.digg_map.ravel() != -1, board.digg_map.ravel() != 0)
-        unknown_mask = board.digg_map.ravel() == -1
-        flag_mask = board.digg_map.ravel() == -2
-        b = board.digg_map.ravel()[known_mask]
-        
-    
-        A = self.A_full[known_mask]
-        b = b - A[:,flag_mask].sum(axis=1)
-
-        include_mask = np.diff(A.tocsc().indptr) != 0
-        true_unknown_mask = np.logical_and(np.logical_and(unknown_mask, include_mask), np.logical_not(flag_mask))
-        A = A[:,true_unknown_mask]
-
-        if n_bombs:
-            b = np.append(b, n_bombs)
-            A = sp.vstack([A, sp.csr_matrix(np.ones(A.shape[1]))])
-
-        # plt.figure()
-        # plt.spy(A)
-        # plt.show()
-
-        return A, b, known_mask, true_unknown_mask
-
-    def solve_linear_problem(self, board, A, b, known_mask, unknown_mask):
-        x0 = self.x_full[unknown_mask]
-        x = spla.lsqr(A, b, btol=1e-2, show=False)[0]
-        # print(f"LSQR: {x}")
-
-        # nrow, ncol = board.digg_map.shape
-        # self.x_full = np.empty(nrow * ncol)
-        self.x_full[:] = np.nan
-        self.x_full[unknown_mask] = x#np.abs(x)
-        play_idx = np.nanargmin(self.x_full)
-        print(f'play_idx: {play_idx}, pos: {self.get_pos(board, play_idx)}')
-        play_pos = self.get_pos(board, play_idx)
-
-        print(self.x_full)
-
-        # flag_pos_list = []
-        # for flag_idx in np.isclose(self.x_full, 1, atol=1e-3).nonzero()[0]:
-        #     flag_pos_list.append(self.get_pos(board, flag_idx))
-        flag_pos_list = self.put_flags(board)
-        # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
-
-        # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
-        # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
-        return play_pos, flag_pos_list
-        
-    def solve_constrained_problem(self, board, A, b, known_mask, unknown_mask):
-
-        # # using scipy.optimize.minimize
-        # residual = lambda x: np.sum(np.sqrt((A@x - b)**2))
-        # cons = opt.LinearConstraint(np.ones_like(x0), 0, self.mines- np.sum(flag_mask)) # keep sum of estimates less than remaining bombs
-        # self.x_full[unknown_mask] = opt.minimize(residual, x0=x0, constraints=cons).x
-            
-        # using scipy.optimize.least_squares
-        n_undiscovered = np.count_nonzero(board.digg_map == -1)
-        x0 = self.mines / n_undiscovered * np.ones(A.shape[1])
-        residual = lambda x: A@x - b
-        x = opt.least_squares(residual, x0, bounds=(0,1), max_nfev=100).x
-        # print(f"Opt: {x}")
-
-        # nrow, ncol = board.digg_map.shape
-        # full_x = np.empty(nrow * ncol)
-        self.x_full[:] = np.nan
-        self.x_full[unknown_mask] = x
-        play_idx = np.nanargmin(self.x_full)
-        play_pos = self.get_pos(board, play_idx)
-
-        print(self.x_full)
-
-        # flag_pos_list = []
-        # for flag_idx in np.isclose(self.x_full, 1, atol=0.05).nonzero()[0]:
-        #     flag_pos_list.append(self.get_pos(board, flag_idx))
-        # # flag_pos_list.append(self.get_pos(board, np.nanargmax(self.x_full)))
-        flag_pos_list = self.put_flags(board)
-
-        return play_pos, flag_pos_list
         
     def solve_reduced(self, board):
         tiles = board.digg_map.flatten()
@@ -145,7 +98,10 @@ class GIGAAI:
         
         A_ef_u = A_ef[:,unexplored_mask] # Shape: explored x unexplored
         informed_mask = np.ones_like(unexplored_mask)
-        informed_mask[unexplored_mask] = (np.diff(A_ef_u.tocsc().indptr) != 0) # Shape: full, true only for tiles neighbouring (incl. diagonally) to an explored cell 
+        if self.methods[METHOD]["sparse"]:
+            informed_mask[unexplored_mask] = (np.diff(A_ef_u.tocsc().indptr) != 0) # Shape: full, true only for tiles neighbouring (incl. diagonally) to an explored cell, SPARSE VERSION
+        else:
+            informed_mask[unexplored_mask] = (A_ef_u.sum(axis=0) != 0) # Shape: full, true only for tiles neighbouring (incl. diagonally) to an explored cell, DENSE VERSION
         A_ef_ui = A_ef[:,unexplored_mask & informed_mask] # Shape: explored x (unexplored & informed)
 
         # Handle fully determined cases where number of flags & explored numbers adds up perfectly
@@ -153,7 +109,10 @@ class GIGAAI:
         zero_known_mask[explored_mask & np.logical_not(flag_mask)] = (b_ef == 0) # Shape: explored, false for equations with 0 RHS after flags were brought to RHS
         A_zero = A_ef_ui[b_ef==0] # Shape: (explored & nonzero RHS) x (unexplored & informed)
         zero_unknown_mask = np.zeros_like(unexplored_mask)
-        zero_unknown_mask[unexplored_mask & informed_mask] = (np.diff(A_zero.tocsc().indptr) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb)
+        if self.methods[METHOD]["sparse"]:
+            zero_unknown_mask[unexplored_mask & informed_mask] = (np.diff(A_zero.tocsc().indptr) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb), SPARSE VERSION
+        else:
+            zero_unknown_mask[unexplored_mask & informed_mask] = (A_zero.sum(axis=0) != 0) # Shape: full, true for unknowns that can be fully identified as zero (no bomb), DENSE VERSION
         b_reduced = b_ef[b_ef!=0] # Retain only equations for nonzero RHS
 
         # TODO: Implement full-rule and compute corresponding one_unknown_mask
@@ -179,57 +138,36 @@ class GIGAAI:
             naive_estimate = self.mines/np.sum(unexplored_cells)
             x0 = naive_estimate*np.ones(np.sum(unknown_mask))
 
-            def solve_lsq(A, b, x0, method, tol=1e-3):
-                if method == "single":
-                    return spla.lsmr(A, b, btol=tol, show=False, x0=x0)[0]
-                elif method == "iterative":
-                    itr_max = 20
-                    sol = np.empty(A.shape[1])
-                    sol[:] = x0
-                    for itr in range(itr_max):
-                        sol = spla.lsmr(A, b, btol=tol, show=False, x0=np.clip(sol,0,1))[0]
-                        violated_dofs = np.any(sol>1) | np.any(sol<0)
-                        if itr == itr_max-1 or not violated_dofs: 
-                            # print(f'Converged after {itr+1x} iterations')
-                            return sol
-                elif method == "trf":
-                    return opt.lsq_linear(A, b, bounds=[0,1], tol=tol, lsq_solver="lsmr", lsmr_tol=tol).x
-                else:
-                    print("Method not valid!")
-
             # Solve LSQ
             if SOLVER == "full":
-                self.x_full[unknown_mask] = solve_lsq(A_reduced, b_reduced, x0, method=METHOD)
+                self.x_full[unknown_mask] = self.methods[METHOD]["f"](A_reduced, b_reduced, x0)
 
             elif SOLVER == "decomposition":
                 n_blocks, block_ids = spgr.connected_components(A_reduced.dot(A_reduced.T)) # Group rows by how they are connected by columns
                 if n_blocks == 1: # If only one block exists, can directly use the reduced system
-                    self.x_full[unknown_mask] = solve_lsq(A_reduced, b_reduced, x0, method=METHOD)
+                    self.x_full[unknown_mask] = self.methods[METHOD]["f"](A_reduced, b_reduced, x0)
                 else:
-                    # unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
-                    # unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
-                    # print(f"n_blocks: {n_blocks}")
-                    # print(f"block_ids: {block_ids}")
-                    # print(f"unique_blocks: {unique_blocks}")
-                    # print(f"unique_blocks_sorted: {unique_blocks_sorted}")
-                    for block in np.unique(block_ids): # Iterate groups, form submatrices
-                    # for block in unique_blocks_sorted: # Iterate groups, form submatrices
+                    unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
+                    unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
+                    # for block in np.unique(block_ids): # Iterate groups, form submatrices
+                    for block in unique_blocks_sorted: # Iterate groups, form submatrices
                         block_known_mask = (block_ids == block)
-                        A_block = A_reduced[block_known_mask].tocsc()
-                        block_unknown_mask = (np.diff(A_block.indptr) != 0)
+                        if self.methods[METHOD]["sparse"]:
+                            A_block = A_reduced[block_known_mask].tocsc()
+                            block_unknown_mask = (np.diff(A_block.indptr) != 0)
+                        else:
+                            A_block = A_reduced[block_known_mask]
+                            block_unknown_mask = (A_block.sum(axis=0) != 0)
                         A_block = A_block[:, block_unknown_mask]
                         b_block = b_reduced[block_known_mask]
-                        
-                        # print(A_block.toarray())
-                        # print("------------------------")
 
                         block_global_unknown_mask = np.zeros_like(unknown_mask)
                         block_global_unknown_mask[unknown_mask] = block_unknown_mask
                         x0_block = naive_estimate*np.ones(A_block.shape[1])
                         
-                        x = solve_lsq(A_block, b_block, x0_block, method=METHOD)
+                        x = self.methods[METHOD]["f"](A_block, b_block, x0_block)
                         self.x_full[block_global_unknown_mask] = x
-                        # if np.any(abs(x) < 1e-1): break
+                        if np.any(abs(x) < 1e-2): break
                         # if x.min() > -1e-2 and x.max() < naive_estimate: break
                         # if x.min() > 0.2 and x.max() > 0.8: break
 
