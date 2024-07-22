@@ -39,7 +39,7 @@ FLAG_TOL = 1e-3  # Flagging tolerance, how close an estimate is to 1 before plac
 
 # Gameplay configuration
 # BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
-BOARD_SIZE = (9, 9)
+BOARD_SIZE = (5, 6)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
