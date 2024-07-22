@@ -576,10 +576,11 @@ def run_benchmark():
     toc = time.time()
     case_time = 0
 
-    BOARD_SIZES = [(9, 9), (16, 16), (30, 16)]
-    MINE_FRACTIONS = [0.123457, 0.15625, 0.20625]
+    BOARD_SIZES = [(9, 9), (16, 16), (30, 16), (30, 32)]
+    MINE_FRACTIONS = [0.123457, 0.15625, 0.20625, 0.15]
     
-    for i, case in enumerate(['A', 'B', 'C']):
+    for i, case in enumerate(['A', 'B', 'C', 'D']):
+        # if i < 3: continue
         BENCHMARK_info = {}
         BOARD_SIZE = BOARD_SIZES[i]
         MINE_FRACTION = MINE_FRACTIONS[i]
