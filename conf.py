@@ -35,7 +35,6 @@ BENCHMARK_n = 1000  # number of simulations
 SOLVER = "full" # Available: "full", "decomposition"
 METHOD = "lstsq"
 TOL = 1e-3  # Iterative solver tolerance
-FLAG_TOL = 1e-3  # Flagging tolerance, how close an estimate is to 1 before placing a flag
 
 # Gameplay configuration
 # BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
