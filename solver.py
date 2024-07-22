@@ -198,7 +198,7 @@ class GIGAAI:
 
     def put_flags(self, board):
         flag_pos_list = []
-        for flag_idx in np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
+        for flag_idx in np.isclose(self.x_full, 1, atol=FLAG_TOL).nonzero()[0]:
             flag_pos_list.append(self.get_pos(board, flag_idx))
         return flag_pos_list
 
