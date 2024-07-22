@@ -60,17 +60,17 @@ class Board:
             # self.mine_map[1, 1] = 1
 
             # # case 2
-            self.mines = 10
-            self.mine_map[0, 3] = 1
-            self.mine_map[0, 5] = 1
-            self.mine_map[1, 0] = 1
-            self.mine_map[1, 5] = 1
-            self.mine_map[3, 0] = 1
-            self.mine_map[4, 0] = 1
-            self.mine_map[4, 1] = 1
-            self.mine_map[4, 3] = 1
-            self.mine_map[4, 4] = 1
-            self.mine_map[4, 5] = 1
+            # self.mines = 10
+            # self.mine_map[0, 3] = 1
+            # self.mine_map[0, 5] = 1
+            # self.mine_map[1, 0] = 1
+            # self.mine_map[1, 5] = 1
+            # self.mine_map[3, 0] = 1
+            # self.mine_map[4, 0] = 1
+            # self.mine_map[4, 1] = 1
+            # self.mine_map[4, 3] = 1
+            # self.mine_map[4, 4] = 1
+            # self.mine_map[4, 5] = 1
             # self.mine_map[5, 0] = 1
             # self.mine_map[5, 1] = 1
             # self.mine_map[3, 5] = 1

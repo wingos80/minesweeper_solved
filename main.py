@@ -255,7 +255,7 @@ class App:
             self.play_pos, self.flag_pos_list = self.solver.play_one_move(self.board)
     
     def check_events(self):
-        """ Method to manage player events:
+        """ Method to manage player events: 
 
             If the player press 'ESC', exit the game.
             If the player press 'r', restart the game.
@@ -553,7 +553,10 @@ class App:
 
 def main():
     if not BENCHMARK: print(f'Using seed: {SEED}')
-    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL, random_place=False)
+    random_place = True
+    if BENCHMARK: assert random_place == True, "Random place must be True when running benchmark!!"
+
+    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL, random_place=random_place)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
@@ -567,6 +570,7 @@ def run_benchmark():
         print(f"created directory: {'./benchmark/'}")
         
     VISUAL = False
+    # VISUAL = False
 
     SEEDS = np.arange(0, BENCHMARK_n)
     toc = time.time()
