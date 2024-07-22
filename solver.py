@@ -105,7 +105,6 @@ class GIGAAI:
         cols_nonzero = lambda A: (np.diff(A.tocsc().indptr) != 1) if self.methods[METHOD]["sparse"] else (np.count_nonzero(A, axis=0) != 0)
         rows_nonzero = lambda A: (np.diff(A.tocsr().indptr) != 1) if self.methods[METHOD]["sparse"] else (np.count_nonzero(A, axis=1) != 0)
 
-
         A_e_u = self.A_full[explored_mask][:, unexplored_mask] # Shape: explored x unexplored
         b_e = tiles[explored_mask]
         # print("###########")
@@ -166,11 +165,10 @@ class GIGAAI:
 
         if not np.any(zero_mask): # Solve tiles only if there is no guaranteed safe tile that can be picked
             mines_remaining = self.mines - np.count_nonzero(flag_mask | one_mask) # Get number of remaining mines, taking into account flagged mines and mines found by one-rule in this solve
-            remaining_unknown_mask = (unknown_mask | (np.logical_not(informed_mask) & unexplored_mask))
-            remaining_unknown_estimate = mines_remaining/np.count_nonzero(remaining_unknown_mask)
-            self.x_full[remaining_unknown_mask] = remaining_unknown_estimate
-            # x0 = unexplored_cell_estimate*np.ones(np.sum(unknown_mask))
-            x0 = self.x_full[unknown_mask]
+            remaining_unknown_mask = (unknown_mask | (np.logical_not(informed_mask) & unexplored_mask)) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
+            remaining_unknown_estimate = mines_remaining/np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+            self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate
+            x0 = self.x_full[unknown_mask] # Retrieve naive estimate as initial guess (used for iterative solvers)
 
             # Solve LSQ
             if SOLVER == "full":
@@ -182,30 +180,21 @@ class GIGAAI:
                 else:
                     unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
                     unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
-                    # for block in np.unique(block_ids): # Iterate groups, form submatrices
                     for block in unique_blocks_sorted: # Iterate groups, form submatrices
                         block_known_mask = (block_ids == block)
                         A_block = A_reduced[block_known_mask]
                         block_unknown_mask = cols_nonzero(A_block)
-                        # if self.methods[METHOD]["sparse"]:
-                        #     A_block = A_reduced[block_known_mask].tocsc()
-                        #     block_unknown_mask = (np.diff(A_block.indptr) != 0)
-                        # else:
-                        #     A_block = A_reduced[block_known_mask]
-                        #     block_unknown_mask = (A_block.sum(axis=0) != 0)
                         A_block = A_block[:, block_unknown_mask]
                         b_block = b_reduced[block_known_mask]
 
                         block_global_unknown_mask = np.zeros_like(unknown_mask)
                         block_global_unknown_mask[unknown_mask] = block_unknown_mask
-                        # x0_block = naive_estimate*np.ones(A_block.shape[1])
                         x0_block = self.x_full[unknown_mask][block_unknown_mask]
                         
                         x = self.methods[METHOD]["f"](A_block, b_block, x0_block)
                         self.x_full[block_global_unknown_mask] = x
-                        # if np.any(abs(x) < 1e-2): break
-                        if x.min() > -1e-2 and x.max() < remaining_unknown_estimate: break
-                        # if x.min() > 0.2 and x.max() > 0.8: break
+
+                        if np.any(abs(x) < 1e-2): break # Early exit if a confident zero was computed
 
 
         # Select play for this step, and fill queue if multiple safe plays are available
@@ -220,7 +209,7 @@ class GIGAAI:
 
         # Retrieve all guaranteed mines from one-rule result and build flag placement list
         flag_pos_list = []
-        for flag_idx in np.nonzero(one_mask)[0]:# (self.x_full==1).nonzero()[0]:#np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
+        for flag_idx in np.nonzero(one_mask)[0]:
             flag_pos_list.append(self.get_pos(board, flag_idx))
 
         # print(f'\nx_full after playing previous move: \n{self.x_full.reshape(BOARD_SIZE).T}')
@@ -228,12 +217,6 @@ class GIGAAI:
         # print(f'\nunknown in playing previous move: \n{(unknown_mask | (unexplored_mask & np.logical_not(informed_mask))).astype(int).reshape(BOARD_SIZE).T}')
         # print(f'play (row, col): ({play_pos[1]}, {play_pos[0]})')
         return play_pos, flag_pos_list
-
-    def put_flags(self, board):
-        flag_pos_list = []
-        for flag_idx in np.nonzero(one_mask):# (self.x_full==1).nonzero()[0]:#np.isclose(self.x_full, 1, atol=1e-6).nonzero()[0]:
-            flag_pos_list.append(self.get_pos(board, flag_idx))
-        return flag_pos_list
 
     def get_pos(self, board, linear_idx):
         nrow, ncol = board.digg_map.shape
