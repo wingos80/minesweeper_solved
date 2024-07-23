@@ -548,15 +548,14 @@ class App:
             unexplored_cells = np.sum(self.board.digg_map == -1)
             unexplored_cells_ratio = unexplored_cells / (self.board.size[0] * self.board.size[1])
             self.info['unexplored_cells_ratio'] = unexplored_cells_ratio
-            # print('    ', self.info)
+            
 
 
 def main():
     if not BENCHMARK: print(f'Using seed: {SEED}')
-    random_place = True
-    if BENCHMARK: assert random_place == True, "Random place must be True when running benchmark!!"
+    if BENCHMARK: assert RANDOM_PLACE == True, "Random place must be True when running benchmark!!"
 
-    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL, random_place=random_place)
+    app = App(BOARD_SIZE, MINES, seed=SEED, pretty_print=True, visual=VISUAL, random_place=RANDOM_PLACE)
     app.start(auto=not VISUAL, auto_restart=VISUAL, hint=VISUAL)
 
     return app.info
@@ -686,5 +685,5 @@ if __name__ == '__main__':
         print(f"Running {BENCHMARK_n} tests\n")
         BENCHMARK_results = run_benchmark()
     else:
-        SEED = SEED if args.seed is None else args.seed
+        SEED = SEED if args.seed is None else (None if args.seed == -1 else args.seed)
         _ = main()

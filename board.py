@@ -55,11 +55,7 @@ class Board:
                     mines_placed += 1
         else:         
             # self.mine_map[column, row] = 1
-            # # case 1
-            # self.mines = 1
-            # self.mine_map[1, 1] = 1
-
-            # # case 2
+            
             # self.mines = 10
             # self.mine_map[0, 3] = 1
             # self.mine_map[0, 5] = 1
@@ -71,31 +67,38 @@ class Board:
             # self.mine_map[4, 3] = 1
             # self.mine_map[4, 4] = 1
             # self.mine_map[4, 5] = 1
-            # self.mine_map[5, 0] = 1
-            # self.mine_map[5, 1] = 1
-            # self.mine_map[3, 5] = 1
-            # self.mine_map[4, 5] = 1
-            # self.mine_map[5, 5] = 1
-            # self.mine_map[1, 5] = 1
-            # self.mine_map[0, 4] = 1
-            # self.mine_map[0, 5] = 1
-            # self.mine_map[1, 5] = 1
-            # self.mine_map[0, 1] = 1
-            # self.mine_map[3, 0] = 1
+            self.mines = 27
+            self.mine_map[0, 3] = 1
+            self.mine_map[1, 1] = 1
+            self.mine_map[1, 3] = 1
+            self.mine_map[1, 5] = 1
+            self.mine_map[1, 6] = 1
+            self.mine_map[1, 7] = 1
+            self.mine_map[1, 12] = 1
+            self.mine_map[2, 0] = 1
+            self.mine_map[2, 1] = 1
+            self.mine_map[2, 2] = 1
+            self.mine_map[2, 10] = 1
+            self.mine_map[3, 3] = 1
+            self.mine_map[3, 6] = 1
+            self.mine_map[3, 9] = 1
+            self.mine_map[3, 13] = 1 
+            self.mine_map[4, 0] = 1
+            self.mine_map[4, 9] = 1
+            self.mine_map[4, 12] = 1 
+            self.mine_map[6, 3] = 1
+            # 19 bombs so far
+            # 8 bombs left
+            self.mine_map[4, 5] = 1
+            self.mine_map[5, 4] = 1
+            self.mine_map[5, 7] = 1
+            self.mine_map[6, 9] = 1
+            self.mine_map[6, 12] = 1
+            self.mine_map[7, 6] = 1
+            self.mine_map[7, 10] = 1
+            # self.mine_map[7, 12] = 1
+            self.mine_map[7, 8] = 1
 
-            
-            # self.mine_map[4, 0] = 1
-            # self.mine_map[5, 0] = 1
-            # self.mine_map[5, 1] = 1
-            # self.mine_map[3, 5] = 1
-            # self.mine_map[4, 5] = 1
-            # self.mine_map[5, 5] = 1
-            # self.mine_map[1, 5] = 1
-            # self.mine_map[0, 4] = 1
-            # self.mine_map[0, 5] = 1
-            # self.mine_map[1, 5] = 1
-            # self.mine_map[0, 1] = 1
-            # self.mine_map[3, 0] = 1
             pass
 
     def count_mines(self, pos):

@@ -37,8 +37,8 @@ METHOD = "lstsq" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
 TOL = 1e-3  # Iterative solver tolerance
 
 # Gameplay configuration
-# BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
-BOARD_SIZE = (5, 6)
+RANDOM_PLACE = True  # randomly place mines or not
+BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
