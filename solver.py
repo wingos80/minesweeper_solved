@@ -88,7 +88,11 @@ class GIGAAI:
         
     def solve_reduced(self, board):
         if self.play_queue: # If a safe play exists in the queue, then immediate return this play
-            return self.play_queue.pop(), []
+            play_pos = self.play_queue.pop()
+            while (board.digg_map[play_pos[0], play_pos[1]] >= EXPLORED_CELL) and self.play_queue:
+                play_pos = self.play_queue.pop()
+
+            return play_pos, []
 
         # Start by assuming all knowns are the explored cells and all unknowns are the unexplored cells
         tiles = board.digg_map.flatten()
@@ -142,9 +146,9 @@ class GIGAAI:
         b_eo = b_e[np.logical_not(one_known_e)] # Restrict RHS to exclude knowns that are used to fully determine a set of unknowns
         self.x_full[one_mask] = 1 # Set exact 1 for unknowns that are guaranteed to be a mine by one-rule
         unknown_mask &= np.logical_not(one_mask) # Restrict unknown mask to exclude one-rule results
-        print("Stage: One-rule")
-        print(A_eo_uifo)
-        print(b_eo)
+        # print("Stage: One-rule")
+        # print(A_eo_uifo)
+        # print(b_eo)
 
         # Zero-rule
         zero_known_eo = (b_eo == 0) # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
@@ -155,9 +159,9 @@ class GIGAAI:
         b_eoz = b_eo[np.logical_not(zero_known_eo)] # Restrict RHS to exclude knowns that are used to fully determine a set of unknowns
         self.x_full[zero_mask] = 0 # Set exact 0 for unknowns that are guaranteed to safe by zero-rule
         unknown_mask &= np.logical_not(zero_mask) # Restrict unknown mask to exclude zero-rule results
-        print("Stage: Zero-rule")
-        print(A_eoz_uifoz)
-        print(b_eoz)
+        # print("Stage: Zero-rule")
+        # print(A_eoz_uifoz)
+        # print(b_eoz)
         
         # Rename fully reduced linear problem
         A_reduced = A_eoz_uifoz
