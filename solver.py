@@ -35,27 +35,27 @@ import time
 
 class GIGAAI:
     methods = {
-        "lstsq": {
+        "LS_LSTSQ": {
             "f": lambda A, b, x0: np.linalg.lstsq(A, b)[0],
             "sparse": False,
         },
-        "bvls": {
+        "LS_BVLS": {
             "f": lambda A, b, x0: opt.lsq_linear(A, b, bounds=[0,1], method='bvls', lsq_solver="exact").x,
             "sparse": False,
         },
-        "nnls": {
+        "LS_NNLS": {
             "f": lambda A, b, x0: opt.nnls(A, b)[0],
             "sparse": False,
         },
-        "lsmr": {
+        "LS_LSMR": {
             "f": lambda A, b, x0: spla.lsmr(A, b, btol=TOL, show=False, x0=x0)[0],
             "sparse": True,
         },
-        "lsqr": {
+        "LS_LSQR": {
             "f": lambda A, b, x0: spla.lsqr(A, b, btol=TOL, show=False, x0=x0)[0],
             "sparse": True,
         },
-        "trf": {
+        "LS_TRF": {
             "f": lambda A, b, x0: opt.lsq_linear(A, b, bounds=[0,1], method='trf', lsq_solver="lsmr", lsmr_tol=TOL, tol=TOL).x,
             "sparse": True,
         },
@@ -175,9 +175,9 @@ class GIGAAI:
             x0 = self.x_full[unknown_mask] # Retrieve naive estimate as initial guess (used for iterative solvers)
 
             # Solve LSQ
-            if SOLVER == "full":
+            if not DECOMPOSITION:
                 self.x_full[unknown_mask] = self.methods[METHOD]["f"](A_reduced, b_reduced, x0)
-            elif SOLVER == "decomposition":
+            else:
                 n_blocks, block_ids = spgr.connected_components(A_reduced.dot(A_reduced.T)) # Group rows by how they are connected by columns
                 if n_blocks == 1: # If only one block exists, can directly use the reduced system
                     self.x_full[unknown_mask] = self.methods[METHOD]["f"](A_reduced, b_reduced, x0)

@@ -25,21 +25,21 @@ expert difficulty:
 metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 3
+SEED = None
 
 # Toggling Benchmark
-BENCHMARK = 1
+BENCHMARK = 0
 BENCHMARK_n = 1000  # number of simulations
 
 # Solver settings
-SOLVER = "full" # Available: "full", "decomposition"
-METHOD = "lstsq" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
+DECOMPOSITION = False
+METHOD = "LS_LSTSQ" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
 TOL = 1e-3  # Iterative solver tolerance
 
 # Gameplay configuration
-# BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
-BOARD_SIZE = (5, 6)
-MINE_FRACTION = 0.20625
+BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
+# BOARD_SIZE = (5, 6)
+MINE_FRACTION = 0.15
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
