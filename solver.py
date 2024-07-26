@@ -196,7 +196,8 @@ class GIGAAI:
                         self.x_full[block_global_unknown_mask] = x
 
                         if np.any(abs(x) < 1e-2): break # Early exit if a confident zero was computed
-
+        
+        # Implement Tree Search, which will determine whether it is possible for a cell to have a bomb
 
         # Select play for this step, and fill queue if multiple safe plays are available
         safe_indices = np.nonzero(zero_mask)[0]

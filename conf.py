@@ -10,7 +10,7 @@ BENCHMARK SPECIFICATIONS:
 beginner difficulty:
     BOARD_SIZE = (9, 9)
     MINE_FRACTION = 0.12347
-    MINES = 10
+    MINES = 10 
 
 intermediate difficulty:
     BOARD_SIZE = (16, 16)
@@ -28,7 +28,7 @@ metrics = win_rate, number of (un)explored cells upon game end, runtime till gam
 SEED = 3
 
 # Toggling Benchmark
-BENCHMARK = 1
+BENCHMARK = 0
 BENCHMARK_n = 1000  # number of simulations
 
 # Solver settings
@@ -39,6 +39,7 @@ TOL = 1e-3  # Iterative solver tolerance
 # Gameplay configuration
 RANDOM_PLACE = True  # randomly place mines or not
 BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
+# BOARD_SIZE = (4,3)  # (n-columns, n-rows)
 MINE_FRACTION = 0.20625
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
@@ -106,9 +107,9 @@ def LIKELIHOOD_COLOR(x):
         val = (x-VMIN)/(VMAX-VMIN)
         # if x < 0.1:
         #     return (0,255,0)
-        if x > 0.9:
+        if x >= 0.9:
             return (255,0,0)
-        elif x<0.9:
+        elif x < 0.9:
             # return (255,255,100)
             return np.array(cmap(x))[:3]*255
         # elif x<0.2:
