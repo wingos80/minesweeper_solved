@@ -25,15 +25,15 @@ expert difficulty:
 metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 3
+SEED = None
 
 # Toggling Benchmark
 BENCHMARK = 0
 BENCHMARK_n = 1000  # number of simulations
 
 # Solver settings
-SOLVER = "full" # Available: "full", "decomposition"
-METHOD = "lstsq" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
+DECOMPOSITION = False
+METHOD = "LS_LSTSQ" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
 TOL = 1e-3  # Iterative solver tolerance
 
 # Gameplay configuration
