@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib as mpl
+import matplotlib.pyplot as mplc
 
 """
 BENCHMARK SPECIFICATIONS:
@@ -99,7 +99,7 @@ class COLOR:
 # min max values for bomb likelihood
 VMIN, VMAX = -0.2, 1.2
 RED_MAP = lambda x: ((-x+VMIN)/(VMAX-VMIN)*(255-125) + 125, (x-VMIN)/(VMAX-VMIN)*(255-125) + 125, 125) if not np.isnan(x) else C_LIGHT_GRAY
-cmap = mpl.cm.get_cmap('RdYlGn_r')
+cmap = mplc.get_cmap('RdYlGn_r')
 LIKELIHOOD_COLOR = lambda x: np.array(cmap((x-VMIN)/(VMAX-VMIN)))[:3]*255 if not np.isnan(x) else C_LIGHT_GRAY
 
 def LIKELIHOOD_COLOR(x):
