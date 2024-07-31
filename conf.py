@@ -27,15 +27,6 @@ metrics = win_rate, number of (un)explored cells upon game end, runtime till gam
 # Set game seed
 SEED = None
 
-# Toggling Benchmark
-BENCHMARK = 0
-BENCHMARK_n = 1000  # number of simulations
-
-# Solver settings
-DECOMPOSITION = False
-METHOD = "LS_LSTSQ" # Available: "lstsq", "bvls", "nnls", "lsmr", "lsqr", "trf"
-TOL = 1e-3  # Iterative solver tolerance
-
 # Gameplay configuration
 RANDOM_PLACE = True  # randomly place mines or not
 BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
@@ -53,6 +44,17 @@ DETONED_MINE_CELL = -3
 FLAG_CELL = -2
 UNEXPLORED_CELL = -1
 EXPLORED_CELL = 0
+
+# Toggling Benchmark
+BENCHMARK = 0
+BENCHMARK_n = 1000  # number of simulations
+
+# Solver settings
+from system import System
+from method import Method
+SYSTEM = System.reduced
+METHOD = Method.ls_lstsq
+TOL = 1e-3  # Iterative solver tolerance
 
 # Resource files constants
 FONT_FILE = "resources/mine-sweeper-font/mine-sweeper.ttf"
