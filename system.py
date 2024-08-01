@@ -6,7 +6,7 @@ from conf import *
 class System:
     def __init__(self, board):
         board_size = board.digg_map.shape[0] * board.digg_map.shape[1]
-        sparse = (board_size > 1000)
+        sparse = (board_size > 500)
         self.A_full = self.__full_matrix(board, sparse)
 
     @staticmethod

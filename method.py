@@ -26,17 +26,17 @@ class Method:
     @staticmethod
     def ls_lsmr(A, b, x0):
         A = ensure_sparse(A)
-        return spla.lsmr(A, b, btol=TOL, show=False, x0=x0)[0]
+        return spla.lsmr(A, b, btol=1e-3, show=False, x0=x0)[0]
 
     @staticmethod
     def ls_lsqr(A, b, x0):
         A = ensure_sparse(A)
-        return spla.lsqr(A, b, btol=TOL, show=False, x0=x0)[0]
+        return spla.lsqr(A, b, btol=1e-3, show=False, x0=x0)[0]
     
     @staticmethod
     def ls_trf(A, b, x0):
         A = ensure_sparse(A)
-        return opt.lsq_linear(A, b, bounds=[0,1], method='trf', lsq_solver="lsmr", lsmr_tol=TOL, tol=TOL).x
+        return opt.lsq_linear(A, b, bounds=[0,1], method='trf', lsq_solver="lsmr", lsmr_tol=1e-3, tol=1e-3).x
         
     @staticmethod
     def ts_binary_dfs(A, b, x0):
