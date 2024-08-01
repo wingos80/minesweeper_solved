@@ -7,6 +7,38 @@ class System:
         self.sparse = (board_size > 1000)
         self.A_full = self.__full_matrix(board)
         
+
+    # @staticmethod
+    # def decompose(f):
+    #     def __decompose_systems(board):
+    #         As, bs, unknown_masks, determined_mask, determined_values = f(board)
+    #         for i in range(len(As)):
+    #             A, b, unknown_mask = As[i], bs[i], unknown_masks[i]
+    #         n_blocks, block_ids = spgr.connected_components(A.dot(A.T)) # Group rows by how they are connected by columns
+    #         if n_blocks == 1: # If only one block exists, can directly use the reduced system
+    #                 return As, bs, unknown_masks, determined_values, 
+    #             else:
+    #                 unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
+    #                 unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
+    #                 for block in unique_blocks_sorted: # Iterate groups, form submatrices
+    #                     block_known_mask = (block_ids == block)
+    #                     A_block = A_reduced[block_known_mask]
+    #                     block_unknown_mask = cols_nonzero(A_block)
+    #                     A_block = A_block[:, block_unknown_mask]
+    #                     b_block = b_reduced[block_known_mask]
+
+    #                     block_global_unknown_mask = np.zeros_like(unknown_mask)
+    #                     block_global_unknown_mask[unknown_mask] = block_unknown_mask
+    #                     x0_block = self.x_full[unknown_mask][block_unknown_mask]
+                        
+    #                     x = self.methods[METHOD]["f"](A_block, b_block, x0_block)
+    #                     self.x_full[block_global_unknown_mask] = x
+
+    #                     if np.any(abs(x) < 1e-2): break # Early exit if a confident zero was computed
+
+        
+    #     return __decompose_systems
+
     def __full_matrix(self, board):
         rows, cols = board.digg_map.shape
         if self.sparse:
@@ -18,7 +50,7 @@ class System:
             off_block = diag_block + np.eye(cols)
             full_matrix = np.kron(np.eye(rows), diag_block) + np.kron(np.eye(rows, k=1) + np.eye(rows, k=-1), off_block)
         return full_matrix.astype(int)
-
+    
     def reduced(self, board):
         # Start by assuming all knowns are the explored cells and all unknowns are the unexplored cells
         tiles = board.digg_map.flatten()
@@ -99,5 +131,4 @@ class System:
         determined_values[zero_mask] = 0
         determined_values = determined_values[determined_mask]
         
-        guaranteed_safe_tile = "Exists" if np.any(zero_mask) else None  # could also just be True or False, but this imo this is more legible
-        return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values, guaranteed_safe_tile
+        return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values

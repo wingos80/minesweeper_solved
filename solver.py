@@ -56,48 +56,27 @@ class Solver:
             return play_pos, []
 
         # Get linear problems
-        As, bs, unknown_masks, determined_mask, determined_values, guaranteed_safe_tile = SYSTEM(self.system, board)  # why are we passing self.system here?
+        As, bs, unknown_masks, determined_mask, determined_values = SYSTEM(self.system, board)  # why are we passing self.system here?
 
         # Reset full solution vector and compute/store naive estimate
         self.x_full[:] = np.nan
         mines_remaining = self.mines - np.count_nonzero(board.digg_map == FLAG_CELL) - np.count_nonzero(determined_values == 1) # Get number of remaining mines, taking into account flaged cells and mines determined to be mines during system assembly
         remaining_unknown_mask = (board.digg_map.ravel() < EXPLORED_CELL) & (board.digg_map.ravel() != FLAG_CELL) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
-        # print("###################")
-        # print(self.mines)
-        # print(board.digg_map)
-        # print(remaining_unknown_mask)
-        # TODO BUG, the following try except statements is a really bad bug fix, need to implement a more prudent fix (e.g. dont allow solver to place more flags than self.mines)
-        try:
-            remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
-        except:
-            logger = logging.getLogger(__name__)
-            print("\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR")
-            logger.error("Division by zero, setting unknown estimate to be 0")
-            print("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n")
-            remaining_unknown_estimate = 0
+        remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
         self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate, TODO temporarily commented out
         self.x_full[determined_mask] = determined_values
         
-        if guaranteed_safe_tile == None: # Solve tiles only if there is no guaranteed safe tile that can be picked
+        if not np.any(determined_values == 0): # Solve tiles only if there is no guaranteed safe tile that can be picked
             # Iterate over systems (only multiple if decomposition is used) and solve each
             for i in range(len(As)): 
                 A, b, unknown_mask = As[i], bs[i], unknown_masks[i] # Extract system from systems
                 x0 = self.x_full[unknown_mask] # Retrieve naive estimate as initial guess (used for iterative solvers)
                 self.x_full[unknown_mask] = METHOD(A, b, x0) # Solve system
-            try:
-                # Pick lowest if no safe play is available
-                play_idx = np.nanargmin(self.x_full)
-            except:
-                logger = logging.getLogger(__name__)
-                play_idx = np.random.randint(0, self.x_full.shape[0])
-                print("\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR")
-                logger.error(f"No play available, sampled random play_idx: {play_idx}")
-                print("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n")
+            play_idx = np.nanargmin(self.x_full)
             self.play_queue.append(self.get_pos(board, play_idx))
         else:
-            # Select play for this step, and fill queue if multiple safe plays are available
+            # Fill queue with all safe plays are available
             safe_indices = np.nonzero(self.x_full == 0)[0]
-        # if safe_indices.shape[0] > 0: # If at least one safe choice exists then pick those, otherwise pick lowest
             for safe_idx in safe_indices:
                 self.play_queue.append(self.get_pos(board, safe_idx))
 
