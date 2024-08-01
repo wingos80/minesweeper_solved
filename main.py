@@ -565,7 +565,7 @@ def run_benchmark():
         print(f"created directory: {'./benchmark/'}")
         
     VISUAL = False
-    # VISUAL = False
+    # VISUAL = True
 
     SEEDS = np.arange(0, BENCHMARK_n)
     toc = time.time()
@@ -596,6 +596,7 @@ def run_benchmark():
         # run the benchmark
         for seed in SEEDS:
             SEED = seed
+            # SEED = 19
             info = main()
             
             keys = list(info.keys())

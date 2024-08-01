@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
+import logging
 import numpy as np
 import scipy.optimize as opt
 import scipy.sparse as sp
@@ -67,11 +67,17 @@ class Solver:
         self.x_full[:] = np.nan
         mines_remaining = self.mines - np.count_nonzero(board.digg_map == FLAG_CELL) - np.count_nonzero(determined_values == 1) # Get number of remaining mines, taking into account flaged cells and mines determined to be mines during system assembly
         remaining_unknown_mask = (board.digg_map.ravel() < EXPLORED_CELL) & (board.digg_map.ravel() != FLAG_CELL) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
-        print("###################")
-        print(self.mines)
-        print(board.digg_map)
-        print(remaining_unknown_mask)
-        remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+        # print("###################")
+        # print(self.mines)
+        # print(board.digg_map)
+        # print(remaining_unknown_mask)
+        # TODO BUG, the following try except statements is a really bad bug fix, need to implement a more prudent fix (e.g. dont allow solver to place more flags than self.mines)
+        try:
+            remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+        except:
+            logger = logging.getLogger(__name__)
+            logger.error("Division by zero, setting unknown estimate to be 0")
+            remaining_unknown_estimate = 0
         self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate
         self.x_full[determined_mask] = determined_values
         
@@ -86,8 +92,15 @@ class Solver:
         if safe_indices.shape[0] > 0: # If at least one safe choice exists then pick those, otherwise pick lowest
             for safe_idx in safe_indices:
                 self.play_queue.append(self.get_pos(board, safe_idx))
-        else: # Pick lowest if no safe play is available
-            play_idx = np.nanargmin(self.x_full)
+        else: 
+            # TODO a temporary try except statement to catch when no play is available, should inspect to see if this is a good fix
+            try:
+                # Pick lowest if no safe play is available
+                play_idx = np.nanargmin(self.x_full)
+            except:
+                logger = logging.getLogger(__name__)
+                logger.error("No play available, setting play_idx to 0")
+                play_idx = np.random.randint(0, self.x_full.shape[0])
             self.play_queue.append(self.get_pos(board, play_idx))
         play_pos = self.play_queue.pop()
 
@@ -117,7 +130,7 @@ class Solver:
         if np.count_nonzero(board.digg_map[board.digg_map<0])==board.digg_map.shape[0]*board.digg_map.shape[1]:
             return (np.random.randint(0,board.digg_map.shape[0]), np.random.randint(0,board.digg_map.shape[1])), []
         
-        with np.printoptions(precision=6, suppress=True, linewidth=np.inf, threshold=np.inf):
+        with np.printoptions(precision=6, suppress=True, linewidth=np.inf, threshold=np.inf): # TODO, why dont we set np.printoptions globally?
             play_pos, flag_pos_list = self.solve(board)
 
         # print(f'A matrix:\n{self.A_reduced.toarray()}')
