@@ -1,19 +1,13 @@
 import numpy as np
+import scipy.sparse as sp
 import scipy.sparse.csgraph as spgr
 from conf import *
 
 class System:
     def __init__(self, board):
         board_size = board.digg_map.shape[0] * board.digg_map.shape[1]
-        self.sparse = (board_size > 1000)
-        self.A_full = self.__full_matrix(board)
-
-    def __cols_nonzero(self, A):
-        return (np.diff(A.tocsc().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=0) != 0)
-
-    def __rows_nonzero(self, A):
-        return (np.diff(A.tocsr().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=1) != 0)
-        
+        sparse = (board_size > 1000)
+        self.A_full = self.__full_matrix(board, sparse)
 
     @staticmethod
     def decompose(f):
@@ -33,7 +27,7 @@ class System:
                     for block in unique_blocks_sorted: # Iterate groups, form submatrices
                         block_known_mask = (block_ids == block)
                         A_block = A[block_known_mask]
-                        block_unknown_mask = self.__cols_nonzero(A_block)
+                        block_unknown_mask = (A_block.sum(axis=0) != 0)
                         A_block = A_block[:, block_unknown_mask]
                         b_block = b[block_known_mask]
 
@@ -47,9 +41,9 @@ class System:
             return As_new, bs_new, unknown_masks_new, determined_mask, determined_values
         return __decompose_systems
 
-    def __full_matrix(self, board):
+    def __full_matrix(self, board, sparse=False):
         rows, cols = board.digg_map.shape
-        if self.sparse:
+        if sparse:
             diag_block = sp.eye_array(cols, k=1) + sp.eye_array(cols, k=-1)
             off_block = diag_block + sp.eye_array(cols)
             full_matrix = sp.kron(sp.eye_array(rows), diag_block) + sp.kron(sp.eye_array(rows,k=1)+sp.eye_array(rows,k=-1), off_block)
@@ -80,7 +74,7 @@ class System:
         # print(b_e)
 
         # Form mask that indicates whether a cell neighbours an explored (number) cell
-        informed_u = self.__cols_nonzero(A_e_u) # Find which unknowns are not "connected" to any knowns, i.e. are not adjacent to an explored tile. This is equivalent to finding which columns of A_e_uf are empty.
+        informed_u = (A_e_u.sum(axis=0) != 0) # Find which unknowns are not "connected" to any knowns, i.e. are not adjacent to an explored tile. This is equivalent to finding which columns of A_e_uf are empty.
         informed_mask[unexplored_mask] = informed_u # Store the result in the global informed_mask vector
         A_e_ui = A_e_u[:, informed_u] # Restrict system matrix to just informed unknowns
         unknown_mask &= informed_mask # Restrict unknown mask to just informed cells
@@ -92,8 +86,8 @@ class System:
         # flag_ui = flag_mask[unexplored_mask & informed_mask] # Shape: unexplored, Marks which unexplored tiles are flagged
         flag_ui = flag_mask[unknown_mask] # Shape: unexplored, Marks which unexplored tiles are flagged
         A_e_uif = A_e_ui[:, np.logical_not(flag_ui)] # Restrict system matrix to include just unflagged unknowns
-        b_e -= np.count_nonzero(A_e_ui[:,flag_ui], axis=1) # Shape: explored, Modify bring known  (flags, where x=1) to RHS of equation
-        nonorphan_knowns = self.__rows_nonzero(A_e_uif) # Find empty rows corresponding to orphaned knowns being left after bringing flags to RHS
+        b_e -= A_e_ui[:,flag_ui].sum(axis=1) # Shape: explored, bring knowns (flags, where x=1) to RHS of equation
+        nonorphan_knowns = (A_e_uif.sum(axis=1) != 0) # Find empty rows corresponding to orphaned knowns being left after bringing flags to RHS
         A_e_uif = A_e_uif[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from system matrix
         b_e = b_e[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from RHS
         unknown_mask &= np.logical_not(flag_mask) # Restrict unknown mask to just unflagged cells
@@ -102,27 +96,25 @@ class System:
         # print(b_e)
 
         # One-rule
-        one_known_e = (np.count_nonzero(A_e_uif, axis=1) == b_e) # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
-        one_unknown_uif = np.count_nonzero(A_e_uif[one_known_e], axis=0) > 0 # Find the corresponding nonzero unknowns that are determined by each "one" known (= the corresponding unknown), TODO: Sparse version (via ind_ptr)
+        one_known_e = (A_e_uif.sum(axis=1) == b_e) # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
+        one_unknown_uif = (A_e_uif[one_known_e].sum(axis=0) > 0) # Find the corresponding nonzero unknowns that are determined by each "one" known (= the corresponding unknown), TODO: Sparse version (via ind_ptr)
         one_mask[unknown_mask] = one_unknown_uif # Store whether an unknown cell was fully determined by one-rule
         A_eo_uifo = A_e_uif[np.logical_not(one_known_e)][:, np.logical_not(one_unknown_uif)] # Restrict system matrix to just unknowns that couldnt be fully determined by one-rule
-        b_e -= np.count_nonzero(A_e_uif[:, one_unknown_uif], axis=1) # Move the determined unknowns to RHS
+        b_e -= A_e_uif[:, one_unknown_uif].sum(axis=1) # Move the determined unknowns to RHS
         b_eo = b_e[np.logical_not(one_known_e)] # Restrict RHS to exclude knowns that are used to fully determine a set of unknowns
-        # self.x_full[one_mask] = 1 # Set exact 1 for unknowns that are guaranteed to be a mine by one-rule
         unknown_mask &= np.logical_not(one_mask) # Restrict unknown mask to exclude one-rule results
         # print("Stage: One-rule")
         # print(A_eo_uifo)
         # print(b_eo)
         
         # Zero-rule
-        zero_known_eo = (np.count_nonzero(A_eo_uifo, axis=1) == 1)  # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
+        zero_known_eo = (A_eo_uifo.sum(axis=1) == 1)  # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
         zero_known_eo = (b_eo == 0) # Find the "one" knowns that fully determine neighbouring unknowns as bombs (rows where the number of nonzero columns is equal to the RHS), the corresponding unknowns are guaranteed to be bombs, TODO: Sparse version (via ind_ptr)
-        zero_unknown_uifo = np.count_nonzero(A_eo_uifo[zero_known_eo], axis=0) > 0 # Find the corresponding nonzero unknowns that are determined by each "one" known (= the corresponding unknown), TODO: Sparse version (via ind_ptr)
+        zero_unknown_uifo = (A_eo_uifo[zero_known_eo].sum(axis=0) > 0) # Find the corresponding nonzero unknowns that are determined by each "one" known (= the corresponding unknown), TODO: Sparse version (via ind_ptr)
         zero_mask[unknown_mask] = zero_unknown_uifo # Store whether an unknown cell was fully determined by zero-rule
         A_eoz_uifoz = A_eo_uifo[np.logical_not(zero_known_eo)][:, np.logical_not(zero_unknown_uifo)] # Restrict system matrix to just unknowns that couldnt be fully determined by zero-rule
-        b_eo -= np.count_nonzero(A_eo_uifo[:, zero_unknown_uifo], axis=1) # Move the determined unknowns to RHS, BUG, this subtraction can cacuse b_eo to go negative!
+        b_eo -= A_eo_uifo[:, zero_unknown_uifo].sum(axis=1) # Move the determined unknowns to RHS, BUG, this subtraction can cacuse b_eo to go negative!
         b_eoz = b_eo[np.logical_not(zero_known_eo)] # Restrict RHS to exclude knowns that are used to fully determine a set of unknowns
-        # self.x_full[zero_mask] = 0 # Set exact 0 for unknowns that are guaranteed to safe by zero-rule
         unknown_mask &= np.logical_not(zero_mask) # Restrict unknown mask to exclude zero-rule results
         # print("Stage: Zero-rule")
         # print(A_eoz_uifoz)

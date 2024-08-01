@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 
 def randargmin(b,keepshape=False,**kw):
     """
@@ -21,3 +22,14 @@ def randargmin(b,keepshape=False,**kw):
     else:
         return np.argmin(-1*np.random.random(b.shape) * (b==b.min()), **kw)
 
+def ensure_dense(A):
+    if sp.issparse(A):
+        return A.todense()
+    else:
+        return A 
+
+def ensure_sparse(A):
+    if sp.issparse(A):
+        return A
+    else:
+        return sp.csr_array(A) 
