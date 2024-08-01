@@ -246,10 +246,6 @@ class App:
                 self.board.place_flag(flag_pos)
             
             self.on_success_dig()
-        # elif self.play_pos == None:
-        #     # Choose random position at start of game
-        #     # declare we lost if solver does not know what to do
-        #     self.end_game()
         
         if self.alive and not self.won:
             self.play_pos, self.flag_pos_list = self.solver.play_one_move(self.board)

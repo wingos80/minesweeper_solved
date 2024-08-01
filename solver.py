@@ -61,16 +61,19 @@ class Solver:
             return play_pos, []
 
         # Get linear problems
-        As, bs, unknown_masks, determineds, determined_values = SYSTEM(self.system, board)
+        As, bs, unknown_masks, determined_mask, determined_values = SYSTEM(self.system, board)
 
         # Reset full solution vector and compute/store naive estimate
         self.x_full[:] = np.nan
-        print(determineds)
-        print(np.array(determineds))
         mines_remaining = self.mines - np.count_nonzero(board.digg_map == FLAG_CELL) - np.count_nonzero(determined_values == 1) # Get number of remaining mines, taking into account flaged cells and mines determined to be mines during system assembly
-        remaining_unknown_mask = (board.digg_map.ravel() == UNEXPLORED_CELL) & np.logical_not(np.count_nonzero(np.array(determineds), axis=1)) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
-        remaining_unknown_estimate = mines_remaining/np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+        remaining_unknown_mask = (board.digg_map.ravel() < EXPLORED_CELL) & (board.digg_map.ravel() != FLAG_CELL) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
+        print("###################")
+        print(self.mines)
+        print(board.digg_map)
+        print(remaining_unknown_mask)
+        remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
         self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate
+        self.x_full[determined_mask] = determined_values
         
         # Iterate over systems (only multiple if decomposition is used) and solve each
         for i in range(len(As)): 
@@ -107,7 +110,7 @@ class Solver:
 
     def play_one_move(self, board):
         # If all uncovered tiles are mines, game is over, return None
-        if np.sum(board.digg_map < 0) == self.mines:
+        if np.sum(board.digg_map < EXPLORED_CELL) == self.mines:
             return None, None
          
         # If all tiles are uncovered, choose random starting tile

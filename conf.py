@@ -29,9 +29,9 @@ SEED = None
 
 # Gameplay configuration
 RANDOM_PLACE = True  # randomly place mines or not
-BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
-# BOARD_SIZE = (4,3)  # (n-columns, n-rows)
-MINE_FRACTION = 0.20625
+BOARD_SIZE = (9, 9)  # (n-columns, n-rows)
+# BOARD_SIZE = (5,5)  # (n-columns, n-rows)
+MINE_FRACTION = 0.12347
 MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
@@ -46,8 +46,8 @@ UNEXPLORED_CELL = -1
 EXPLORED_CELL = 0
 
 # Toggling Benchmark
-BENCHMARK = 0
-BENCHMARK_n = 1000  # number of simulations
+BENCHMARK = 1
+BENCHMARK_n = 100  # number of simulations
 
 # Solver settings
 from system import System
