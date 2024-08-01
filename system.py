@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse.csgraph as spgr
 from conf import *
 
 class System:
@@ -6,38 +7,45 @@ class System:
         board_size = board.digg_map.shape[0] * board.digg_map.shape[1]
         self.sparse = (board_size > 1000)
         self.A_full = self.__full_matrix(board)
+
+    def __cols_nonzero(self, A):
+        return (np.diff(A.tocsc().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=0) != 0)
+
+    def __rows_nonzero(self, A):
+        return (np.diff(A.tocsr().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=1) != 0)
         
 
-    # @staticmethod
-    # def decompose(f):
-    #     def __decompose_systems(board):
-    #         As, bs, unknown_masks, determined_mask, determined_values = f(board)
-    #         for i in range(len(As)):
-    #             A, b, unknown_mask = As[i], bs[i], unknown_masks[i]
-    #         n_blocks, block_ids = spgr.connected_components(A.dot(A.T)) # Group rows by how they are connected by columns
-    #         if n_blocks == 1: # If only one block exists, can directly use the reduced system
-    #                 return As, bs, unknown_masks, determined_values, 
-    #             else:
-    #                 unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
-    #                 unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
-    #                 for block in unique_blocks_sorted: # Iterate groups, form submatrices
-    #                     block_known_mask = (block_ids == block)
-    #                     A_block = A_reduced[block_known_mask]
-    #                     block_unknown_mask = cols_nonzero(A_block)
-    #                     A_block = A_block[:, block_unknown_mask]
-    #                     b_block = b_reduced[block_known_mask]
+    @staticmethod
+    def decompose(f):
+        def __decompose_systems(self, board):
+            As, bs, unknown_masks, determined_mask, determined_values = f(self, board)
+            As_new, bs_new, unknown_masks_new = [], [], []
 
-    #                     block_global_unknown_mask = np.zeros_like(unknown_mask)
-    #                     block_global_unknown_mask[unknown_mask] = block_unknown_mask
-    #                     x0_block = self.x_full[unknown_mask][block_unknown_mask]
-                        
-    #                     x = self.methods[METHOD]["f"](A_block, b_block, x0_block)
-    #                     self.x_full[block_global_unknown_mask] = x
+            # Iterate over all systems and decompose each to form a new list of decoupled systems
+            for i in range(len(As)):
+                A, b, unknown_mask = As[i], bs[i], unknown_masks[i]
+                n_blocks, block_ids = spgr.connected_components(A.dot(A.T)) # Group rows by how they are connected by columns
+                if n_blocks == 1: # If only one block exists, then return the list of systems as is
+                        return As, bs, unknown_masks, determined_mask, determined_values
+                else:
+                    unique_blocks, row_count = np.unique(block_ids, return_counts=True) # Get list of unique blocks and the number of rows for each block
+                    unique_blocks_sorted = unique_blocks[np.argsort(row_count)] # Get list of blocks in ascending row count order
+                    for block in unique_blocks_sorted: # Iterate groups, form submatrices
+                        block_known_mask = (block_ids == block)
+                        A_block = A[block_known_mask]
+                        block_unknown_mask = self.__cols_nonzero(A_block)
+                        A_block = A_block[:, block_unknown_mask]
+                        b_block = b[block_known_mask]
 
-    #                     if np.any(abs(x) < 1e-2): break # Early exit if a confident zero was computed
+                        block_global_unknown_mask = np.zeros_like(unknown_mask)
+                        block_global_unknown_mask[unknown_mask] = block_unknown_mask
 
-        
-    #     return __decompose_systems
+                        As_new.append(A_block)
+                        bs_new.append(b_block)
+                        unknown_masks_new.append(block_global_unknown_mask)
+
+            return As_new, bs_new, unknown_masks_new, determined_mask, determined_values
+        return __decompose_systems
 
     def __full_matrix(self, board):
         rows, cols = board.digg_map.shape
@@ -64,8 +72,6 @@ class System:
         # self.x_full = np.empty_like(tiles, dtype=float)
         # self.x_full[:] = np.nan
         
-        cols_nonzero = lambda A: (np.diff(A.tocsc().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=0) != 0)
-        rows_nonzero = lambda A: (np.diff(A.tocsr().indptr) != 1) if self.sparse else (np.count_nonzero(A, axis=1) != 0)
 
         A_e_u = self.A_full[explored_mask][:, unexplored_mask] # Shape: explored x unexplored
         b_e = tiles[explored_mask]
@@ -74,7 +80,7 @@ class System:
         # print(b_e)
 
         # Form mask that indicates whether a cell neighbours an explored (number) cell
-        informed_u = cols_nonzero(A_e_u) # Find which unknowns are not "connected" to any knowns, i.e. are not adjacent to an explored tile. This is equivalent to finding which columns of A_e_uf are empty.
+        informed_u = self.__cols_nonzero(A_e_u) # Find which unknowns are not "connected" to any knowns, i.e. are not adjacent to an explored tile. This is equivalent to finding which columns of A_e_uf are empty.
         informed_mask[unexplored_mask] = informed_u # Store the result in the global informed_mask vector
         A_e_ui = A_e_u[:, informed_u] # Restrict system matrix to just informed unknowns
         unknown_mask &= informed_mask # Restrict unknown mask to just informed cells
@@ -87,7 +93,7 @@ class System:
         flag_ui = flag_mask[unknown_mask] # Shape: unexplored, Marks which unexplored tiles are flagged
         A_e_uif = A_e_ui[:, np.logical_not(flag_ui)] # Restrict system matrix to include just unflagged unknowns
         b_e -= np.count_nonzero(A_e_ui[:,flag_ui], axis=1) # Shape: explored, Modify bring known  (flags, where x=1) to RHS of equation
-        nonorphan_knowns = rows_nonzero(A_e_uif) # Find empty rows corresponding to orphaned knowns being left after bringing flags to RHS
+        nonorphan_knowns = self.__rows_nonzero(A_e_uif) # Find empty rows corresponding to orphaned knowns being left after bringing flags to RHS
         A_e_uif = A_e_uif[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from system matrix
         b_e = b_e[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from RHS
         unknown_mask &= np.logical_not(flag_mask) # Restrict unknown mask to just unflagged cells
