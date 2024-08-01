@@ -82,7 +82,7 @@ class System:
         zero_unknown_uifo = np.count_nonzero(A_eo_uifo[zero_known_eo], axis=0) > 0 # Find the corresponding nonzero unknowns that are determined by each "one" known (= the corresponding unknown), TODO: Sparse version (via ind_ptr)
         zero_mask[unknown_mask] = zero_unknown_uifo # Store whether an unknown cell was fully determined by zero-rule
         A_eoz_uifoz = A_eo_uifo[np.logical_not(zero_known_eo)][:, np.logical_not(zero_unknown_uifo)] # Restrict system matrix to just unknowns that couldnt be fully determined by zero-rule
-        b_eo -= np.count_nonzero(A_eo_uifo[:, zero_unknown_uifo], axis=1) # Move the determined unknowns to RHS
+        b_eo -= np.count_nonzero(A_eo_uifo[:, zero_unknown_uifo], axis=1) # Move the determined unknowns to RHS, BUG, this subtraction can cacuse b_eo to go negative!
         b_eoz = b_eo[np.logical_not(zero_known_eo)] # Restrict RHS to exclude knowns that are used to fully determine a set of unknowns
         # self.x_full[zero_mask] = 0 # Set exact 0 for unknowns that are guaranteed to safe by zero-rule
         unknown_mask &= np.logical_not(zero_mask) # Restrict unknown mask to exclude zero-rule results
@@ -99,4 +99,5 @@ class System:
         determined_values[zero_mask] = 0
         determined_values = determined_values[determined_mask]
         
-        return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values
+        guaranteed_safe_tile = "Exists" if np.any(zero_mask) else None  # could also just be True or False, but this imo this is more legible
+        return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values, guaranteed_safe_tile
