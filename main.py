@@ -6,9 +6,9 @@ import argparse
 import pickle
 import os
 
-from msdraw import draw_border, swap_color, render_cell
-from msgui import NumberDisplay, SmileButton
-from board import Board
+from utils.msdraw import draw_border, swap_color, render_cell
+from utils.msgui import NumberDisplay, SmileButton
+from utils.board import Board
 from solver import Solver
 from conf import *
 

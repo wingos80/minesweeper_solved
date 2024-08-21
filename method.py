@@ -42,5 +42,37 @@ class Method:
     def ts_binary_dfs(A, b, x0):
         pass
 
+    @staticmethod
+    def ts_binary_dfs_2(A, b, x0):
+        # what should the initial state be hmm
+        Init_state = x0 
+        # Init_state = np.zeros_like(x0)
+
+        tree = {'node': 's-0',
+                'child nodes': [],
+                'state': Init_state}
+        
+        def _explore_node(tree):
+            """
+            Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
+            """
+            raise('Not implemented, need to figure out how best to construct the tree and use it...')
+            N = np.count_nonzero(tree['state'] == 0)
+            if N == 0:
+                # logger.debug('No more dof in state?')
+                return
+            
+            for i in N:
+                child_state = tree['state'].copy()
+                child_state[i] = 1
+                child_node = {'node': f's-0-{i}',
+                              'child nodes': [],
+                              'state': child_state}
+                tree['child nodes'].append(child_node)
+                              
+                                
+
+        pass
+
 
 
