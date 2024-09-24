@@ -58,53 +58,38 @@ class Method:
         pass
 
     @staticmethod
-    def ts_binary_dfs_2(A, b, x0):        
-        residual   = A@x0 - b
-        if np.any(residual < 0):
-            state_constrain = 'under_constrained'
-        elif np.sum(residual) == 0:
-            state_constrain = 'exactly_satisfied'
-        else:
-            state_constrain = 'over_constrained'
-
-        satisfactory_states = []
+    def ts_binary_dfs_2(A, b, x0):
 
         class Node:
             def __init__(self, x):
                 self.x = x
-                self.id = self._make_id()
+                self.id = np.prod(primes[np.nonzero(self.x)[0]])  # multiple of primes
                 self.children = []
 
             def add_child(self, obj):
                 self.children.append(obj)
 
-            def _make_id(self,):
-                id_primes = primes[np.nonzero(self.x)[0]]
-                id = 1
-                for prime in id_primes:
-                    id *= prime
-                return id
+            def kill_child(self,):
+                del self.children[0]
 
-
-        def explore_node(tree: Node) -> Node:
+        def explore_node(tree: Node, depth) -> Node:
             """
             Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
             """
             empty_cells = np.nonzero(tree.x==0)[0]  # cells where no bomb is placed
-            id = tree.id
             
             # maybe faster if use try except here?
-            if id in state_constrains:  # pruning step, skip node if already in history
+            if tree.id in state_constrains:  # pruning step, skip node if already in history
                 return tree
             
-            state_constrains[id] = tree.constrain
+            state_constrains[tree.id] = tree.constrain
 
             for cell in empty_cells:
+                if len(tree.children) > 0: tree.kill_child()
                 x = tree.x.copy()
                 x[cell] = 1
                 new_node = Node(x)
                 tree.add_child(new_node)
-
 
                 residual = A@x - b
                 overly_constrained = np.any(residual > 0)  # do the bombs placed exceed any current number?
@@ -120,15 +105,24 @@ class Method:
                         return tree
                     else:
                         tree.children[-1].constrain = 'under_constrained'
-                        tree.children[-1] = explore_node(tree.children[-1])
-            
+                        tree.children[-1] = explore_node(tree.children[-1], depth + 1)
             return tree
+
+        residual   = A@x0 - b
+        if np.any(residual < 0):
+            state_constrain = 'under_constrained'
+        elif np.sum(residual) == 0:
+            state_constrain = 'exactly_satisfied'
+        else:
+            state_constrain = 'over_constrained'
+
+        satisfactory_states = []
 
         init_state = np.zeros_like(x0)
         tree = Node(init_state)
         tree.constrain = state_constrain
         state_constrains = {0: state_constrain}
-        tree = explore_node(tree)
+        tree = explore_node(tree, 0)
 
         x = np.mean(np.array(satisfactory_states),axis=0)
 
