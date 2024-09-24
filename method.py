@@ -1,4 +1,4 @@
-
+import logging
 import numpy as np
 import scipy.optimize as opt
 import scipy.sparse as sp
@@ -7,6 +7,9 @@ import scipy.sparse.csgraph as spgr
 from conf import *
 from utils.functions import *
 from utils.primes import primes
+
+# cmaes might be a good solver for this problem
+logger = logging.getLogger(__name__)
 
 class Method:
     """
@@ -78,11 +81,6 @@ class Method:
             """
             empty_cells = np.nonzero(tree.x==0)[0]  # cells where no bomb is placed
             
-            # maybe faster if use try except here?
-            if tree.id in state_constrains:  # pruning step, skip node if already in history
-                return tree
-            
-            state_constrains[tree.id] = tree.constrain
 
             for cell in empty_cells:
                 if len(tree.children) > 0: tree.kill_child()
@@ -90,22 +88,30 @@ class Method:
                 x[cell] = 1
                 new_node = Node(x)
                 tree.add_child(new_node)
+                
+                # maybe faster if use try except here?
+                if new_node.id in explored_states:  # pruning step, skip node if already in history
+                    continue
+
 
                 residual = A@x - b
+                tree.children[-1].residual = residual
                 overly_constrained = np.any(residual > 0)  # do the bombs placed exceed any current number?
                 
                 if overly_constrained:
-                    tree.children[-1].constrain = 'overly_constrained'
-                    return tree
+                    constrain = 'overly_constrained'
                 else:
-                    exactly_satisfied = np.sum(residual) == 0  # do the bombs place exactly satisfy all current numbers?
+                    exactly_satisfied = np.sum(residual!=0) == 0  # do the bombs place exactly satisfy all current numbers?
                     if exactly_satisfied:
-                        tree.children[-1].constrain = 'exactly_satisfied'
-                        satisfactory_states.append(tree.children[-1].x)
-                        return tree
+                        constrain = 'exactly_satisfied'
+                        satisfactory_states.append(x)
                     else:
-                        tree.children[-1].constrain = 'under_constrained'
+                        constrain = 'under_constrained'
                         tree.children[-1] = explore_node(tree.children[-1], depth + 1)
+
+                explored_states[new_node.id] = constrain
+                tree.children[-1].constrain = constrain
+
             return tree
 
         residual   = A@x0 - b
@@ -121,8 +127,10 @@ class Method:
         init_state = np.zeros_like(x0)
         tree = Node(init_state)
         tree.constrain = state_constrain
-        state_constrains = {0: state_constrain}
+        explored_states = {0: state_constrain}
         tree = explore_node(tree, 0)
+
+        # logger.info(f"tree search explored {len(explored_states)} number of unique states")
 
         x = np.mean(np.array(satisfactory_states),axis=0)
 
