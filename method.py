@@ -8,7 +8,21 @@ from conf import *
 from utils.functions import *
 from utils.primes import primes
 
-class Method:    
+class Method:
+    """
+    Class to define the methods for solving the problem.
+    All methods should be static.
+
+    Parameters:
+    ----------
+    A: matrix of neighbouring each cell
+    b: vector of number in each cell
+    x0: vector of initial guess for position of bombs
+
+    Returns:
+    -------
+    x: vector of final guess for position of bombs
+    """
     @staticmethod
     def ls_lstsq(A, b, x0):
         A = ensure_dense(A)
@@ -44,18 +58,16 @@ class Method:
         pass
 
     @staticmethod
-    def ts_binary_dfs_2(A, b, x0):
-        # what should the initial state be hmm
-        # Init_state = x0
-        init_state = np.zeros_like(x0)
+    def ts_binary_dfs_2(A, b, x0):        
         residual   = A@x0 - b
         if np.any(residual < 0):
-            state_constrains = {0: 'under_constrained'}
+            state_constrain = 'under_constrained'
         elif np.sum(residual) == 0:
-            state_constrains = {0: 'exactly_satisfied'}
+            state_constrain = 'exactly_satisfied'
         else:
-            state_constrains = {0: 'over_constrained'}
+            state_constrain = 'over_constrained'
 
+        satisfactory_states = []
 
         class Node:
             def __init__(self, x):
@@ -67,9 +79,9 @@ class Method:
                 self.children.append(obj)
 
             def _make_id(self,):
-                primes = primes[self.x]
+                id_primes = primes[np.nonzero(self.x)[0]]
                 id = 1
-                for prime in primes:
+                for prime in id_primes:
                     id *= prime
                 return id
 
@@ -78,34 +90,46 @@ class Method:
             """
             Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
             """
-            # raise('Not implemented, need to figure out how best to construct the tree and use it...')
-            empty_cells = np.nonzero(tree.x)  # number of mines placed currently
+            empty_cells = np.nonzero(tree.x==0)[0]  # cells where no bomb is placed
+            id = tree.id
+            
+            # maybe faster if use try except here?
+            if id in state_constrains:  # pruning step, skip node if already in history
+                return tree
+            
+            state_constrains[id] = tree.constrain
 
-            for i, cell in enumerate(empty_cells):
+            for cell in empty_cells:
                 x = tree.x.copy()
                 x[cell] = 1
                 new_node = Node(x)
                 tree.add_child(new_node)
 
+
                 residual = A@x - b
-                under_constrained = np.any(residual < 0)  # do the bombs placed exceed any current number?
+                overly_constrained = np.any(residual > 0)  # do the bombs placed exceed any current number?
                 
-                if under_constrained:
-                    tree.children[-1].constrain = 'under_constrained'
-                    tree = explore_node(tree)
+                if overly_constrained:
+                    tree.children[-1].constrain = 'overly_constrained'
+                    return tree
                 else:
                     exactly_satisfied = np.sum(residual) == 0  # do the bombs place exactly satisfy all current numbers?
                     if exactly_satisfied:
                         tree.children[-1].constrain = 'exactly_satisfied'
+                        satisfactory_states.append(tree.children[-1].x)
+                        return tree
                     else:
-                        tree.children[-1].constrain = 'overly_constrained'
-                    return tree
+                        tree.children[-1].constrain = 'under_constrained'
+                        tree.children[-1] = explore_node(tree.children[-1])
             
             return tree
 
-
-
+        init_state = np.zeros_like(x0)
         tree = Node(init_state)
+        tree.constrain = state_constrain
+        state_constrains = {0: state_constrain}
         tree = explore_node(tree)
 
-        pass
+        x = np.mean(np.array(satisfactory_states),axis=0)
+
+        return x
