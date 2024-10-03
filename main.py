@@ -672,6 +672,8 @@ if __name__ == '__main__':
                         help='Set a print name for the benchmark run')
     parser.add_argument('-runs', type=int, default=BENCHMARK_n,
                         help='Toggling benchmark mode (default: BENCHMARK from conf.py)')
+    parser.add_argument('-mines', type=float, default=None,
+                        help='Setting mine density (default: MINE_FRACTION from conf.py)')
     args = parser.parse_args()
     
     BENCHMARK = args.bm
@@ -682,5 +684,7 @@ if __name__ == '__main__':
         print(f"Running {BENCHMARK_n} tests\n")
         BENCHMARK_results = run_benchmark()
     else:
+        MINE_FRACTION = MINE_FRACTION if args.mines is None else (args.mines)
+        MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
         SEED = SEED if args.seed is None else (None if args.seed == -1 else args.seed)
         _ = main()

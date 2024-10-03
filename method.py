@@ -87,12 +87,10 @@ class Method:
                 x = tree.x.copy()
                 x[cell] = 1
                 new_node = Node(x)
-                tree.add_child(new_node)
-                
                 # maybe faster if use try except here?
                 if new_node.id in explored_states:  # pruning step, skip node if already in history
                     continue
-
+                tree.add_child(new_node)
 
                 residual = A@x - b
                 tree.children[-1].residual = residual

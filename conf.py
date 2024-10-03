@@ -25,16 +25,17 @@ expert difficulty:
 metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 2
+SEED = 0
 
 # Gameplay configuration
 RANDOM_PLACE = True  # randomly place mines or not
-# BOARD_SIZE = (9, 9)  # (n-columns, n-rows)
-BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
+BOARD_SIZE = (8, 8)  # (n-columns, n-rows)
+# BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
 # BOARD_SIZE = (5,5)  # (n-columns, n-rows)
 # MINE_FRACTION = 0.12347
-MINE_FRACTION = 0.15
-MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
+# MINE_FRACTION = 0.15
+MINE_FRACTION = 0.185
+# MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
 LEFT, RIGHT = 1, 3
@@ -49,7 +50,7 @@ EXPLORED_CELL = 0
 
 # Toggling Benchmark
 BENCHMARK = 0
-BENCHMARK_n = 80      # number of simulations
+BENCHMARK_n = 100      # number of simulations
 
 # Solver settings
 from system import System
