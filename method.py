@@ -79,7 +79,6 @@ class Method:
             """
             Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
             """
-            print(f"at depth {depth}")
             empty_cells = np.nonzero(tree.x==0)[0]  # cells where no bomb is placed
 
             for cell in empty_cells:
