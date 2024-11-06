@@ -130,3 +130,47 @@ class System:
         determined_values = determined_values[determined_mask]
         
         return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values
+    
+    def full(self,board):
+        # Start by assuming all knowns are the explored cells and all unknowns are the unexplored cells
+        tiles = board.digg_map.flatten()
+        explored_mask = (tiles > EXPLORED_CELL) # Select only explored cells that are adjacent to a bomb (i.e. non-empty explored cells)
+        unexplored_mask = (tiles < EXPLORED_CELL) # Select all unexplored cells
+        flag_mask = (tiles == FLAG_CELL)
+        informed_mask = np.zeros_like(tiles, dtype=bool)
+        unknown_mask = unexplored_mask.copy()
+        one_mask = np.zeros_like(tiles, dtype=bool)
+        zero_mask = np.zeros_like(tiles, dtype=bool)
+        # self.x_full = np.empty_like(tiles, dtype=float)
+        # self.x_full[:] = np.nan
+        
+
+        A_e_u = self.A_full[explored_mask][:, unexplored_mask] # Shape: explored x unexplored
+        b_e = tiles[explored_mask]
+
+        # Form mask that indicates whether a cell neighbours an explored (number) cell
+        informed_u = (A_e_u.sum(axis=0) != 0) # Find which unknowns are not "connected" to any knowns, i.e. are not adjacent to an explored tile. This is equivalent to finding which columns of A_e_uf are empty.
+        informed_mask[unexplored_mask] = informed_u # Store the result in the global informed_mask vector
+        A_e_ui = A_e_u[:, informed_u] # Restrict system matrix to just informed unknowns
+        unknown_mask &= informed_mask # Restrict unknown mask to just informed cells
+
+        # Handle and remove placed flags from system, clean up orphaned knowns
+        # flag_ui = flag_mask[unexplored_mask & informed_mask] # Shape: unexplored, Marks which unexplored tiles are flagged
+        flag_ui = flag_mask[unknown_mask] # Shape: unexplored, Marks which unexplored tiles are flagged
+        A_e_uif = A_e_ui[:, np.logical_not(flag_ui)] # Restrict system matrix to include just unflagged unknowns
+        b_e -= A_e_ui[:,flag_ui].sum(axis=1) # Shape: explored, bring knowns (flags, where x=1) to RHS of equation
+        nonorphan_knowns = (A_e_uif.sum(axis=1) != 0) # Find empty rows corresponding to orphaned knowns being left after bringing flags to RHS
+        A_e_uif = A_e_uif[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from system matrix
+        b_e = b_e[nonorphan_knowns] # Remove rows corresponding to orphaned knowns from RHS
+        unknown_mask &= np.logical_not(flag_mask) # Restrict unknown mask to just unflagged cells
+        
+        # Rename fully reduced linear problem
+        A_reduced = A_e_uif
+        b_reduced = b_e
+        determined_mask = np.logical_or(zero_mask, one_mask)
+        determined_values = np.empty_like(tiles)
+        determined_values[one_mask] = 1
+        determined_values[zero_mask] = 0
+        determined_values = determined_values[determined_mask]
+        
+        return [A_reduced], [b_reduced], [unknown_mask], determined_mask, determined_values

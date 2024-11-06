@@ -70,8 +70,8 @@ class Solver:
             # Iterate over systems (only multiple if decomposition is used) and solve each
             for i in range(len(As)): 
                 A, b, unknown_mask = As[i], bs[i], unknown_masks[i] # Extract system from systems
-                x0 = self.x_full[unknown_mask] # Retrieve naive estimate as initial guess (used for iterative solvers)
-                self.x_full[unknown_mask] = METHOD(A, b, x0) # Solve system
+                x0 = self.x_full[unknown_mask]  # Retrieve naive estimate as initial guess (used for iterative solvers)
+                self.x_full[unknown_mask] = METHOD(A, b, x0=x0, n_mines=mines_remaining) # Solve system
             play_idx = np.nanargmin(self.x_full)
             self.play_queue.append(self.get_pos(board, play_idx))
         else:
@@ -79,6 +79,15 @@ class Solver:
             safe_indices = np.nonzero(self.x_full == 0)[0]
             for safe_idx in safe_indices:
                 self.play_queue.append(self.get_pos(board, safe_idx))
+
+        # Update naive estimate of far cells after solver estimate of No. bombs in near(unknown_mask) cells
+        all_unknown_mask = np.sum(np.array(unknown_masks),axis=0) == 1  # combine all unknown masks into one mask
+        if not np.array_equal(remaining_unknown_mask, all_unknown_mask):  # if there are far cells
+            far_cells_mask = np.logical_xor(remaining_unknown_mask, all_unknown_mask)
+            near_cells_mask = np.logical_xor(far_cells_mask, remaining_unknown_mask)
+            far_cells_mines = mines_remaining - np.sum(self.x_full[near_cells_mask])
+            far_cells_estimate = far_cells_mines / np.count_nonzero(far_cells_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+            self.x_full[far_cells_mask] = far_cells_estimate
 
         play_pos = self.play_queue.pop()
 

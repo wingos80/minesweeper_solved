@@ -25,16 +25,12 @@ expert difficulty:
 metrics = win_rate, number of (un)explored cells upon game end, runtime till game end, ratio of correct to incorrect flag placements, 3BV score?, certainty upon game lose (or end?)
 """
 # Set game seed
-SEED = 0
+SEED = 5
 
 # Gameplay configuration
 RANDOM_PLACE = True  # randomly place mines or not
-BOARD_SIZE = (8, 8)  # (n-columns, n-rows)
-# BOARD_SIZE = (30, 16)  # (n-columns, n-rows)
-# BOARD_SIZE = (5,5)  # (n-columns, n-rows)
-# MINE_FRACTION = 0.12347
-# MINE_FRACTION = 0.15
-MINE_FRACTION = 0.185
+BOARD_SIZE = (6, 6)  # (n-columns, n-rows)
+MINE_FRACTION = 0.33
 # MINES = int(MINE_FRACTION*BOARD_SIZE[0]*BOARD_SIZE[1])
 
 # Mouse button constants
@@ -55,9 +51,16 @@ BENCHMARK_n = 100      # number of simulations
 # Solver settings
 from system import System
 from method import Method
-SYSTEM = System.reduced
+SYSTEM = System.full
 METHOD = Method.ts_binary_dfs_2
-# METHOD = Method.ls_lsqr
+# methods = {'ls_1': Method.ls_lstsq,
+#            'ls_2': Method.ls_bvls,
+#            'ls_3': Method.ls_nnls,
+#            'ls_4': Method.ls_lsmr,
+#            'ls_5': Method.ls_lsqr,
+#            'ls_6': Method.ls_trf,
+#            'ts': Method.ts_binary_dfs_2,}
+# METHOD = methods['ls_1']
 
 # Resource files constants
 FONT_FILE = "resources/mine-sweeper-font/mine-sweeper.ttf"
@@ -110,18 +113,9 @@ LIKELIHOOD_COLOR = lambda x: np.array(cmap((x-VMIN)/(VMAX-VMIN)))[:3]*255 if not
 def LIKELIHOOD_COLOR(x):
     if not np.isnan(x):
         val = (x-VMIN)/(VMAX-VMIN)
-        # if x < 0.1:
-        #     return (0,255,0)
         if x >= 0.9:
             return (255,0,0)
         elif x < 0.9:
-            # return (255,255,100)
             return np.array(cmap(x))[:3]*255
-        # elif x<0.2:
-        #     value = 0.5*(x-0)/(0.2-0)
-        #     return np.array(cmap(value))[:3]*255
-        # elif x>0.8:
-        #     value = 0.5 + 0.5*(val-0.8)/(1-0.8)
-        #     return np.array(cmap(value))[:3]*255
     else:
         return C_LIGHT_GRAY
