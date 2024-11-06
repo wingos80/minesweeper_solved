@@ -27,41 +27,41 @@ class Method:
     x: vector of final guess for position of bombs
     """
     @staticmethod
-    def ls_lstsq(A, b, x0):
+    def ls_lstsq(A, b, **kwargs):
         A = ensure_dense(A)
         return np.linalg.lstsq(A, b)[0]
 
     @staticmethod
-    def ls_bvls(A, b, x0):
+    def ls_bvls(A, b, **kwargs):
         A = ensure_dense(A)
         return opt.lsq_linear(A, b, bounds=[0,1], method='bvls', lsq_solver="exact").x
 
     @staticmethod
-    def ls_nnls(A, b, x0):
+    def ls_nnls(A, b, **kwargs):
         A = ensure_dense(A)
         return opt.nnls(A, b)[0]
 
     @staticmethod
-    def ls_lsmr(A, b, x0):
+    def ls_lsmr(A, b, **kwargs):
         A = ensure_sparse(A)
-        return spla.lsmr(A, b, btol=1e-3, show=False, x0=x0)[0]
+        return spla.lsmr(A, b, btol=1e-3, show=False, x0=kwargs['x0'])[0]
 
     @staticmethod
-    def ls_lsqr(A, b, x0):
+    def ls_lsqr(A, b, **kwargs):
         A = ensure_sparse(A)
-        return spla.lsqr(A, b, btol=1e-3, show=False, x0=x0)[0]
+        return spla.lsqr(A, b, btol=1e-3, show=False, x0=kwargs['x0'])[0]
     
     @staticmethod
-    def ls_trf(A, b, x0):
+    def ls_trf(A, b, **kwargs):
         A = ensure_sparse(A)
         return opt.lsq_linear(A, b, bounds=[0,1], method='trf', lsq_solver="lsmr", lsmr_tol=1e-3, tol=1e-3).x
         
     @staticmethod
-    def ts_binary_dfs(A, b, x0):
+    def ts_binary_dfs(A, b, **kwargs):
         pass
 
     @staticmethod
-    def ts_binary_dfs_2(A, b, x0):
+    def ts_binary_dfs_2(A, b, **kwargs):
 
         class Node:
             def __init__(self, x):
@@ -79,11 +79,11 @@ class Method:
             """
             Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
             """
+            print(f"at depth {depth}")
             empty_cells = np.nonzero(tree.x==0)[0]  # cells where no bomb is placed
-            
 
             for cell in empty_cells:
-                if len(tree.children) > 0: tree.kill_child()
+                if len(tree.children) > 0: tree.kill_child()  # why are we killing the child node?
                 x = tree.x.copy()
                 x[cell] = 1
                 new_node = Node(x)
@@ -92,10 +92,10 @@ class Method:
                     continue
                 tree.add_child(new_node)
 
-                residual = A@x - b
+                residual = A@x - b  # check the constraint satisfaction of new bomb placement 
                 tree.children[-1].residual = residual
-                overly_constrained = np.any(residual > 0)  # do the bombs placed exceed any current number?
                 
+                overly_constrained = np.any(residual > 0) or kwargs['n_mines'] < np.sum(x)  # do the bombs placed exceed any current number?
                 if overly_constrained:
                     constrain = 'overly_constrained'
                 else:
@@ -103,7 +103,7 @@ class Method:
                     if exactly_satisfied:
                         constrain = 'exactly_satisfied'
                         satisfactory_states.append(x)
-                    else:
+                    else:  # do the bombs placed not exceed any AND not satisfy all current numbers? 
                         constrain = 'under_constrained'
                         tree.children[-1] = explore_node(tree.children[-1], depth + 1)
 
@@ -112,6 +112,8 @@ class Method:
 
             return tree
 
+        x0 = kwargs['x0']
+        
         residual   = A@x0 - b
         if np.any(residual < 0):
             state_constrain = 'under_constrained'
@@ -130,6 +132,7 @@ class Method:
 
         # logger.info(f"tree search explored {len(explored_states)} number of unique states")
 
-        x = np.mean(np.array(satisfactory_states),axis=0)
-
-        return x
+        if len(satisfactory_states) == 0:
+            return x0  # return initial guess if cannot find any feasible next bomb placements
+        else:
+            return np.mean(np.array(satisfactory_states),axis=0)  # return estimate of bomb likelihoods if feasible next bomb placements exist
