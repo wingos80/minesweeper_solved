@@ -60,13 +60,14 @@ class Solver:
 
         # Reset full solution vector and compute/store naive estimate
         self.x_full[:] = np.nan
-        mines_remaining = self.mines - np.count_nonzero(board.digg_map == FLAG_CELL) - np.count_nonzero(determined_values == 1) # Get number of remaining mines, taking into account flaged cells and mines determined to be mines during system assembly
-        remaining_unknown_mask = (board.digg_map.ravel() < EXPLORED_CELL) & (board.digg_map.ravel() != FLAG_CELL) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
-        remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
-        self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate, TODO temporarily commented out
         self.x_full[determined_mask] = determined_values
         
         if not np.any(determined_values == 0): # Solve tiles only if there is no guaranteed safe tile that can be picked
+            mines_remaining = self.mines - np.count_nonzero(board.digg_map == FLAG_CELL) - np.count_nonzero(determined_values == 1) # Get number of remaining mines, taking into account flaged cells and mines determined to be mines during system assembly
+            remaining_unknown_mask = (board.digg_map.ravel() < EXPLORED_CELL) & (board.digg_map.ravel() != FLAG_CELL) # Compute mask giving all knowns that are being solved for, as well as any far cells (no-info cells)
+            remaining_unknown_estimate = mines_remaining / np.count_nonzero(remaining_unknown_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+            self.x_full[remaining_unknown_mask] = remaining_unknown_estimate # Set naive estimate, TODO temporarily commented out
+        
             # Iterate over systems (only multiple if decomposition is used) and solve each
             for i in range(len(As)): 
                 A, b, unknown_mask = As[i], bs[i], unknown_masks[i] # Extract system from systems
@@ -74,20 +75,20 @@ class Solver:
                 self.x_full[unknown_mask] = METHOD(A, b, x0=x0, n_mines=mines_remaining) # Solve system
             play_idx = np.nanargmin(self.x_full)
             self.play_queue.append(self.get_pos(board, play_idx))
+
+            # Update naive estimate of far cells after solver estimate of No. bombs in near(unknown_mask) cells
+            all_unknown_mask = np.sum(np.array(unknown_masks + determined_mask),axis=0) == 1  # combine all unknown masks into one mask
+            if not np.array_equal(remaining_unknown_mask, all_unknown_mask):  # if there are far cells
+                far_cells_mask = np.logical_xor(remaining_unknown_mask, all_unknown_mask)
+                near_cells_mask = np.logical_xor(far_cells_mask, remaining_unknown_mask)
+                far_cells_mines = mines_remaining - np.sum(self.x_full[near_cells_mask])
+                far_cells_estimate = far_cells_mines / np.count_nonzero(far_cells_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
+                self.x_full[far_cells_mask] = far_cells_estimate
         else:
             # Fill queue with all safe plays are available
             safe_indices = np.nonzero(self.x_full == 0)[0]
             for safe_idx in safe_indices:
                 self.play_queue.append(self.get_pos(board, safe_idx))
-
-        # Update naive estimate of far cells after solver estimate of No. bombs in near(unknown_mask) cells
-        all_unknown_mask = np.sum(np.array(unknown_masks),axis=0) == 1  # combine all unknown masks into one mask
-        if not np.array_equal(remaining_unknown_mask, all_unknown_mask):  # if there are far cells
-            far_cells_mask = np.logical_xor(remaining_unknown_mask, all_unknown_mask)
-            near_cells_mask = np.logical_xor(far_cells_mask, remaining_unknown_mask)
-            far_cells_mines = mines_remaining - np.sum(self.x_full[near_cells_mask])
-            far_cells_estimate = far_cells_mines / np.count_nonzero(far_cells_mask) # Generate naive estimate for all remaining unknown cells (incl. far cells) based on total mine count
-            self.x_full[far_cells_mask] = far_cells_estimate
 
         play_pos = self.play_queue.pop()
 

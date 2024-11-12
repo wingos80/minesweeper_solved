@@ -132,6 +132,6 @@ class Method:
         # logger.info(f"tree search explored {len(explored_states)} number of unique states")
 
         if len(satisfactory_states) == 0:
-            return x0  # return initial guess if cannot find any feasible next bomb placements
+            return np.zeros_like(x0)  # it was not possible to put any bombs in the neighbouring cells!
         else:
             return np.mean(np.array(satisfactory_states),axis=0)  # return estimate of bomb likelihoods if feasible next bomb placements exist
