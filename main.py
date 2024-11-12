@@ -57,6 +57,7 @@ class App:
             )
             self.background = self.render_background()
             self.cell_symbols = self.render_symbols()
+            self.likelihood_numbers = {}
             self.clock = pg.time.Clock()
 
 
@@ -147,11 +148,20 @@ class App:
         """
         Returns
         """
-        size = int(CELL_SIZE/2)
-        number_font  = pg.font.SysFont(None, size)
-        surf = number_font.render("" if np.isnan(value) else str(round(value, 2)), True, C_BLACK, LIKELIHOOD_COLOR(value))
-        
-        return surf
+        if np.isnan(value):
+            return None
+        else:
+            display_number = str(round(value, 2))
+            if display_number in self.likelihood_numbers:
+                surf = self.likelihood_numbers[display_number]
+                return surf
+            else:
+                size = int(CELL_SIZE/2)
+                number_font  = pg.font.SysFont(None, size)
+                surf = number_font.render(display_number, True, C_BLACK, LIKELIHOOD_COLOR(value))
+
+                self.likelihood_numbers[display_number] = surf
+            return surf
 
     def render_explored_cell(self):
         """ Generates a pygame surface representing an explored cell """
@@ -405,13 +415,15 @@ class App:
             for j in range(h):
                 if board.digg_map[i, j] == UNEXPLORED_CELL and self.hint:
                     surf_colour = self.render_likelihood_colour(self.solver.x_full[i*h + j])
-                    surf_number = self.render_likelihood_number(self.solver.x_full[i*h + j])
                     self.window.blit(
                         surf_colour, (i * CELL_SIZE + off_x, j * CELL_SIZE + off_y)
                     )
-                    self.window.blit(
-                        surf_number, (i * CELL_SIZE + off_x+4, j * CELL_SIZE + off_y+4)
-                    )
+
+                    surf_number = self.render_likelihood_number(self.solver.x_full[i*h + j])
+                    if surf_number is not None:
+                        self.window.blit(
+                            surf_number, (i * CELL_SIZE + off_x+4, j * CELL_SIZE + off_y+4)
+                        )
                 else:
                     surf_symbol = self.cell_symbols[board.digg_map[i, j]]
                     self.window.blit(
