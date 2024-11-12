@@ -75,7 +75,7 @@ class Method:
             def kill_child(self,):
                 del self.children[0]
 
-        def explore_node(tree: Node, depth) -> Node:
+        def explore_node(tree: Node, depth: int) -> Node:
             """
             Explore the tree node. One child node is created by placing a 1 in one element of 'state'.
             """
@@ -111,7 +111,7 @@ class Method:
 
             return tree
 
-        x0 = kwargs['x0']
+        x0 = kwargs['x0']  # initial guess for bomb likelihoods
         
         residual   = A@x0 - b
         if np.any(residual < 0):
