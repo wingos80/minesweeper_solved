@@ -65,7 +65,7 @@ class App:
 
         self.left_click = False
         self.right_click = False
-        self.chord_mode = False
+        self.chord_mode = True
 
         # To mark if the player is able to continue interacting with the board
         self.alive = True
@@ -347,10 +347,12 @@ class App:
                 if not self.alive or self.won:
                     continue
 
+
                 # Event for when the player clicked to place a flag
                 if event.type == pg.MOUSEBUTTONDOWN:
+                    grid_pos = self.cell_pos(event.pos)
                     if event.button == RIGHT and not self.left_click:
-                        self.board.place_flag(self.cell_pos(event.pos))
+                        self.board.place_flag(grid_pos)
 
                         # Update flag display value
                         self.flags_display.set_value(self.board.mines_remaining())
@@ -358,28 +360,39 @@ class App:
 
                 # Event for when the player clicked to digg a place
                 if event.type == pg.MOUSEBUTTONUP:
+                    grid_pos = self.cell_pos(event.pos)
                         
                     # If the chord technique is not active, digg a single cell
-                    if event.button == LEFT and not self.chord_mode:
+                    if event.button == LEFT:
                         # Digg the clicked place
-                        if not self.board.digg(self.cell_pos(event.pos)):
+                        if self.board.digg_map[grid_pos] == FLAG_CELL:
+                            continue
+                        elif self.board.digg_map[grid_pos] >= 0 and self.chord_mode:
+                            if not self.board.chord(grid_pos):
+                                self.end_game()
+                                continue
+                        elif not self.board.digg(grid_pos):
                             self.end_game()
                             continue
                         self.play_ai(act=False)
 
                         self.on_success_dig()
 
-                    # If the chord technique is active, digg all the
-                    # surrounding cells
-                    if (event.button == LEFT and self.right_click)\
-                            or (event.button == RIGHT and self.left_click):
-                        # If the chording fails, means that the player wrong placed
-                        # a flag and the chording technique digged a mine.
-                        if not self.board.chord(self.cell_pos(event.pos)):
-                            self.end_game()
-                            continue
-                        self.play_ai(act=False)
-                        self.on_success_dig()
+                    # TODO check/make sure this is redundant code
+                    # # If the chord technique is active, digg all the
+                    # # surrounding cells
+                    # if (event.button == LEFT and self.right_click)\
+                    #         or (event.button == RIGHT and self.left_click):
+                    # if self.chord_mode and self.board.digg_map[grid_pos] >= 0:
+                    #     # If the chording fails, means that the player wrong placed
+                    #     # a flag and the chording technique digged a mine.
+                    #     if self.board.digg_map[grid_pos] == FLAG_CELL:
+                    #         continue
+                    #     elif not self.board.chord(grid_pos):
+                    #         self.end_game()
+                    #         continue
+                    #     self.play_ai(act=False)
+                    #     self.on_success_dig()
                    
                     # print(self.solver.p_map.T)
                     # print(self.board.digg_map.T)
@@ -451,7 +464,7 @@ class App:
 
         # Turn on chord mode if both clicks are pressing
         if self.left_click and self.right_click:
-            self.chord_mode = True
+            # self.chord_mode = True
 
             # Replace all surrounding cells from (x, y) with explored_cell
             for i in range(-1, 2):
@@ -466,9 +479,9 @@ class App:
                         ((x + i)*CELL_SIZE + off_x, (y + j)*CELL_SIZE + off_y)
                     )
 
-        # Turn off chord mode if clicks are no longer holding
-        if not self.left_click and not self.right_click:
-            self.chord_mode = False
+        # # Turn off chord mode if clicks are no longer holding
+        # if not self.left_click and not self.right_click:
+        #     self.chord_mode = False
 
         # Single cell dig mode
         if self.left_click and not self.chord_mode:
